@@ -1,30 +1,36 @@
 #!/usr/bin/env bash
 #
 # Claude Code 分级推送通知脚本
-# 
-# 机制：
-#   事件触发 → 15s 后推 Bark（Mac 桌面轻提醒）
-#            → 5min 后若仍未响应 → 推企业微信（手机兜底）
-#   用户响应 → clear_pending.sh 清除标记 → 取消后续推送
+#
+# 机制（Linux/远程）：
+#   事件触发 → 15s 后推 Bark → 5min 后推企业微信
+# 机制（macOS 本地）：
+#   事件触发 → 立即弹系统通知 → Bark/企微作为远程备用
 #
 # 用法：由 Claude Code hooks 自动调用，通过 stdin 接收 JSON
 
 set -euo pipefail
 
 # ============================================================
-#  配置区 - 通过环境变量设置，或直接修改此处
+#  配置区
 # ============================================================
-BARK_KEY="${BARK_KEY:-}"                          # Bark 推送 key
-BARK_SERVER="${BARK_SERVER:-https://api.day.app}" # Bark 服务器（自建则改）
-QYWX_WEBHOOK="${QYWX_WEBHOOK:-}"                 # 企业微信机器人 webhook URL
+BARK_KEY="${BARK_KEY:-}"
+BARK_SERVER="${BARK_SERVER:-https://api.day.app}"
+QYWX_WEBHOOK="${QYWX_WEBHOOK:-}"
 
-BARK_DELAY="${BARK_DELAY:-15}"       # Bark 推送延迟（秒）
-WECHAT_DELAY="${WECHAT_DELAY:-300}"  # 企业微信推送延迟（秒）
-RATE_LIMIT=10                        # 防重复：同类事件最短间隔（秒）
+BARK_DELAY="${BARK_DELAY:-15}"
+WECHAT_DELAY="${WECHAT_DELAY:-300}"
+RATE_LIMIT=10
 
 # 状态目录
 STATE_DIR="${HOME}/.claude/hooks/state"
 mkdir -p "$STATE_DIR"
+
+# 平台检测
+IS_MACOS=false
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    IS_MACOS=true
+fi
 
 # ============================================================
 #  读取 hook 事件数据（通过 stdin 接收 JSON）
@@ -50,28 +56,19 @@ MESSAGE=$(echo "$EVENT_DATA" | jq -r '.message // empty' 2>/dev/null || echo "")
 CWD=$(echo "$EVENT_DATA" | jq -r '.cwd // empty' 2>/dev/null || echo "")
 PROJECT=$(basename "${CWD:-unknown}")
 SESSION_ID=$(echo "$EVENT_DATA" | jq -r '.session_id // empty' 2>/dev/null || echo "unknown")
-STOP_REASON=$(echo "$EVENT_DATA" | jq -r '.stop_hook_reason // empty' 2>/dev/null || echo "")
 PERM_MODE=$(echo "$EVENT_DATA" | jq -r '.permission_mode // empty' 2>/dev/null || echo "")
 AGENT_ID=$(echo "$EVENT_DATA" | jq -r '.agent_id // empty' 2>/dev/null || echo "")
 NOTIF_TYPE=$(echo "$EVENT_DATA" | jq -r '.notification_type // empty' 2>/dev/null || echo "")
 
 # ============================================================
-#  子智能体过滤：子智能体事件由母 agent 管理，不需要通知
+#  子智能体过滤
 # ============================================================
 if [ -n "$AGENT_ID" ]; then
     exit 0
 fi
 
-# AskUserQuestion 场景：提取具体问题
-QUESTION=$(echo "$EVENT_DATA" | jq -r '
-  .tool_input.question //
-  .tool_input.questions[0].question //
-  empty
-' 2>/dev/null || echo "")
-
 # ============================================================
-#  Stop 事件过滤：stop_hook_active=true 表示由 Stop Hook 触发的
-#  继续执行，跳过以避免无限循环
+#  Stop 事件过滤：防止 Stop Hook 循环
 # ============================================================
 STOP_ACTIVE=$(echo "$EVENT_DATA" | jq -r '.stop_hook_active // false' 2>/dev/null || echo "false")
 if [ "$EVENT_TYPE" = "stop" ] && [ "$STOP_ACTIVE" = "true" ]; then
@@ -96,7 +93,6 @@ echo "$NOW" > "$RATE_FILE"
 # ============================================================
 case "$EVENT_TYPE" in
     notification)
-        # Claude Code 把 AskUserQuestion 和权限请求都归为 permission_prompt
         case "$NOTIF_TYPE" in
             idle_prompt)
                 TITLE="💤 等待响应"
@@ -118,7 +114,7 @@ case "$EVENT_TYPE" in
         ;;
 esac
 
-# 组装前缀：项目名 + 权限模式
+# 组装前缀
 PREFIX="[$PROJECT]"
 if [ -n "$PERM_MODE" ]; then
     PREFIX="[$PROJECT|$PERM_MODE]"
@@ -126,7 +122,14 @@ fi
 BODY="$PREFIX $BODY"
 
 # ============================================================
-#  创建 pending 标记（用于分级推送的取消机制）
+#  macOS 本地：立即弹系统通知
+# ============================================================
+if $IS_MACOS; then
+    osascript -e "display notification \"$BODY\" with title \"$TITLE\" sound name \"Glass\"" 2>/dev/null || true
+fi
+
+# ============================================================
+#  创建 pending 标记（用于远程推送的取消机制）
 #  先清掉旧的 pending：新事件进来说明之前的事件已被响应
 # ============================================================
 rm -f "${STATE_DIR}"/pending_* 2>/dev/null || true
@@ -135,14 +138,15 @@ PENDING_FILE="${STATE_DIR}/pending_${PENDING_ID}"
 echo "$EVENT_TYPE" > "$PENDING_FILE"
 
 # ============================================================
-#  后台分级推送（不阻塞 Claude Code）
+#  后台分级推送（Bark + 企业微信，不阻塞 Claude Code）
+#  macOS 本地已弹过系统通知，这里作为远程备用
 # ============================================================
 (
-    # ---------- 第一级：Bark → Mac 桌面通知 ----------
+    # ---------- 第一级：Bark ----------
     sleep "$BARK_DELAY"
 
     if [ ! -f "$PENDING_FILE" ]; then
-        exit 0  # 用户已响应，取消推送
+        exit 0
     fi
 
     if [ -n "$BARK_KEY" ]; then
@@ -163,12 +167,12 @@ echo "$EVENT_TYPE" > "$PENDING_FILE"
             >/dev/null 2>&1 || true
     fi
 
-    # ---------- 第二级：企业微信 → 手机兜底 ----------
+    # ---------- 第二级：企业微信 ----------
     REMAINING=$((WECHAT_DELAY - BARK_DELAY))
     sleep "$REMAINING"
 
     if [ ! -f "$PENDING_FILE" ]; then
-        exit 0  # 用户已响应，取消推送
+        exit 0
     fi
 
     if [ -n "$QYWX_WEBHOOK" ]; then

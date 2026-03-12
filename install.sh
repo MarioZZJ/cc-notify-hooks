@@ -2,7 +2,7 @@
 #
 # 一键安装脚本
 # 将 hooks 脚本部署到 ~/.claude/hooks/ 并合并配置到 settings.json
-# 兼容 cc-switch 和直接配置两种方式
+# 兼容 macOS/Linux，兼容 cc-switch 和直接配置
 
 set -euo pipefail
 
@@ -16,8 +16,14 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+IS_MACOS=false
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    IS_MACOS=true
+fi
+
 echo "========================================="
 echo "  Claude Code 分级通知 - 安装"
+echo "  平台: $(uname -s) $(uname -m)"
 echo "========================================="
 echo ""
 
@@ -34,9 +40,13 @@ for cmd in jq curl; do
 done
 if [ "$MISSING_DEP" -eq 1 ]; then
     echo ""
-    echo "  请先安装缺失的依赖后重新运行"
-    echo "  Debian/Ubuntu: sudo apt install -y jq curl"
-    echo "  CentOS/RHEL:   sudo yum install -y jq curl"
+    echo "  请先安装缺失的依赖后重新运行："
+    if $IS_MACOS; then
+        echo "  macOS:         brew install jq curl"
+    else
+        echo "  Debian/Ubuntu: sudo apt install -y jq curl"
+        echo "  CentOS/RHEL:   sudo yum install -y jq curl"
+    fi
     exit 1
 fi
 
@@ -47,6 +57,11 @@ cp "$SCRIPT_DIR/notify.sh" "$HOOKS_DIR/notify.sh"
 cp "$SCRIPT_DIR/clear_pending.sh" "$HOOKS_DIR/clear_pending.sh"
 chmod +x "$HOOKS_DIR/notify.sh" "$HOOKS_DIR/clear_pending.sh"
 echo -e "  ${GREEN}✓${NC} 脚本已复制到 $HOOKS_DIR"
+
+# macOS 提示
+if $IS_MACOS; then
+    echo -e "  ${GREEN}✓${NC} 检测到 macOS，将启用系统原生通知"
+fi
 
 # 3. 配置 hooks（区分 cc-switch 和直接配置）
 echo -e "${YELLOW}[3/4]${NC} 配置 hooks..."
@@ -95,12 +110,20 @@ fi
 echo -e "${YELLOW}[4/4]${NC} 检查推送凭证..."
 MISSING=0
 
+if $IS_MACOS; then
+    echo -e "  ${GREEN}✓${NC} macOS 系统通知（无需配置，开箱即用）"
+fi
+
 if [ -n "${BARK_KEY:-}" ]; then
     echo -e "  ${GREEN}✓${NC} BARK_KEY 已设置 (${BARK_KEY:0:6}...)"
 else
-    echo -e "  ${YELLOW}⚠${NC} BARK_KEY 未设置 - Bark 推送不可用"
-    echo "     export BARK_KEY=\"your-bark-key\""
-    MISSING=1
+    if $IS_MACOS; then
+        echo -e "  ℹ️  BARK_KEY 未设置（macOS 已有系统通知，Bark 为可选远程备用）"
+    else
+        echo -e "  ${YELLOW}⚠${NC} BARK_KEY 未设置 - Bark 推送不可用"
+        echo "     export BARK_KEY=\"your-bark-key\""
+        MISSING=1
+    fi
 fi
 
 if [ -n "${QYWX_WEBHOOK:-}" ]; then
@@ -108,15 +131,17 @@ if [ -n "${QYWX_WEBHOOK:-}" ]; then
 else
     echo -e "  ${YELLOW}⚠${NC} QYWX_WEBHOOK 未设置 - 企业微信推送不可用"
     echo "     export QYWX_WEBHOOK=\"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your-key\""
-    MISSING=1
+    if ! $IS_MACOS; then
+        MISSING=1
+    fi
 fi
 
 if [ -z "${BARK_SERVER:-}" ]; then
     echo -e "  ℹ️  BARK_SERVER 未设置，将使用默认服务器 https://api.day.app"
 fi
 
-# cc-switch 用户提示：环境变量需要写入 common config
-if command -v cc-switch &>/dev/null && [ "$MISSING" -eq 0 ]; then
+# cc-switch 用户提示
+if command -v cc-switch &>/dev/null && [ -n "${BARK_KEY:-}" ]; then
     echo ""
     echo -e "  ${YELLOW}cc-switch 用户注意${NC}："
     echo "  hooks 的执行环境可能拿不到 ~/.bashrc 中的变量。"
@@ -127,7 +152,9 @@ fi
 
 echo ""
 echo "========================================="
-if [ "$MISSING" -eq 0 ]; then
+if $IS_MACOS; then
+    echo -e "  ${GREEN}✅ 安装完成！${NC}（macOS 系统通知已就绪）"
+elif [ "$MISSING" -eq 0 ]; then
     echo -e "  ${GREEN}✅ 安装完成！${NC}"
 else
     echo -e "  ${GREEN}✅ 脚本已安装${NC}，请补充环境变量后即可使用"
