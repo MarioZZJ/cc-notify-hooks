@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 #
-# 一键安装脚本
+# 一键安装脚本（非插件模式）
 # 交互式配置 → 部署脚本 → 合并 hooks 到 settings.json
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HOOKS_DIR="${HOME}/.claude/hooks"
+SCRIPTS_DIR="${HOOKS_DIR}/scripts"
 STATE_DIR="${HOOKS_DIR}/state"
-CONFIG_FILE="${HOOKS_DIR}/notify.conf"
+CONFIG_FILE="${HOOKS_DIR}/notify.json"
 SETTINGS_FILE="${HOME}/.claude/settings.json"
 
 GREEN='\033[0;32m'
@@ -21,7 +22,7 @@ IS_MACOS=false
 [[ "$(uname -s)" == "Darwin" ]] && IS_MACOS=true
 
 echo "========================================="
-echo "  Claude Code 分级通知 - 安装"
+echo "  cc-notify-hooks v2 - 安装"
 echo "  平台: $(uname -s) $(uname -m)"
 echo "========================================="
 echo ""
@@ -54,16 +55,31 @@ fi
 # ============================================================
 #  [2/4] 交互式配置
 # ============================================================
-echo -e "${YELLOW}[2/4]${NC} 配置推送参数..."
+echo -e "${YELLOW}[2/4]${NC} 配置推送渠道..."
 echo ""
 
-# 读取已有配置（配置文件 > 环境变量 > 默认值）
-_read_conf() {
+# Channel 定义：name|display_name|default_delay|credential_fields
+CHANNEL_DEFS=(
+    "macos|macOS 系统通知|3|"
+    "bark|Bark (iOS/macOS/Android)|15|key:Bark Key;server:Bark Server [https://api.day.app]"
+    "telegram|Telegram Bot|5|bot_token:Bot Token;chat_id:Chat ID"
+    "pushover|Pushover|15|app_token:App Token;user_key:User Key"
+    "ntfy|ntfy (开源推送)|15|topic:Topic;server:Server [https://ntfy.sh]"
+    "gotify|Gotify (自建推送)|15|server:Server URL;app_token:App Token"
+    "wechat|企业微信|300|webhook:Webhook URL"
+    "feishu|飞书|300|webhook:Webhook URL"
+    "dingtalk|钉钉|300|webhook:Webhook URL"
+    "slack|Slack|300|webhook:Webhook URL"
+    "discord|Discord|300|webhook:Webhook URL"
+)
+
+# 读取已有配置
+_read_json() {
     local key="$1" default="$2"
     if [ -f "$CONFIG_FILE" ]; then
         local val
-        val=$(grep "^${key}=" "$CONFIG_FILE" 2>/dev/null | head -1 | sed 's/^[^=]*=//;s/^"//;s/"$//') || true
-        if [ -n "$val" ]; then
+        val=$(jq -r "$key // empty" "$CONFIG_FILE" 2>/dev/null) || true
+        if [ -n "$val" ] && [ "$val" != "null" ]; then
             echo "$val"
             return
         fi
@@ -71,88 +87,207 @@ _read_conf() {
     echo "$default"
 }
 
-D_BARK_KEY=$(_read_conf BARK_KEY "${BARK_KEY:-}")
-D_BARK_SERVER=$(_read_conf BARK_SERVER "${BARK_SERVER:-https://api.day.app}")
-D_QYWX_WEBHOOK=$(_read_conf QYWX_WEBHOOK "${QYWX_WEBHOOK:-}")
-D_BARK_DELAY=$(_read_conf BARK_DELAY "${BARK_DELAY:-15}")
-D_WECHAT_DELAY=$(_read_conf WECHAT_DELAY "${WECHAT_DELAY:-300}")
-
 if [ -f "$CONFIG_FILE" ]; then
-    echo -e "  ${CYAN}检测到已有配置，当前值作为默认${NC}"
+    echo -e "  ${CYAN}检测到已有配置 ($CONFIG_FILE)${NC}"
+    echo ""
 fi
-echo -e "  ${CYAN}直接回车使用 [...] 中的值${NC}"
+
+# 旧配置迁移
+if [ -f "${HOOKS_DIR}/notify.conf" ] && [ ! -f "$CONFIG_FILE" ]; then
+    echo -e "  ${CYAN}检测到 v1 配置 (notify.conf)，将自动迁移${NC}"
+    # 读取旧配置
+    source "${HOOKS_DIR}/notify.conf"
+    # 构建基础 JSON
+    MIGRATE_JSON=$(jq -n \
+        --arg bark_key "${BARK_KEY:-}" \
+        --arg bark_server "${BARK_SERVER:-https://api.day.app}" \
+        --arg qywx_webhook "${QYWX_WEBHOOK:-}" \
+        --argjson bark_delay "${BARK_DELAY:-15}" \
+        --argjson wechat_delay "${WECHAT_DELAY:-300}" \
+        --argjson rate_limit "${RATE_LIMIT:-10}" \
+        '{
+            channels: {
+                macos: {enabled: true, delay: 3, sound: "Glass", events: ["notification"]},
+                bark: {enabled: ($bark_key != ""), delay: $bark_delay, key: $bark_key, server: $bark_server},
+                wechat: {enabled: ($qywx_webhook != ""), delay: $wechat_delay, webhook: $qywx_webhook}
+            },
+            rate_limit: $rate_limit
+        }')
+    echo "$MIGRATE_JSON" > "$CONFIG_FILE"
+    mv "${HOOKS_DIR}/notify.conf" "${HOOKS_DIR}/notify.conf.bak"
+    echo -e "  ${GREEN}✓${NC} 已迁移，旧配置备份为 notify.conf.bak"
+    echo ""
+fi
+
+# 列出 channel 让用户选择
+echo "  可用的通知渠道："
+echo ""
+idx=1
+for def in "${CHANNEL_DEFS[@]}"; do
+    IFS='|' read -r name display delay _fields <<< "$def"
+    current_enabled=$(_read_json ".channels.${name}.enabled" "false")
+    if [ "$current_enabled" = "true" ]; then
+        mark="${GREEN}✓${NC}"
+    else
+        mark=" "
+    fi
+    # macOS 在 macOS 上默认启用
+    if [ "$name" = "macos" ] && $IS_MACOS && [ "$current_enabled" = "false" ] && [ ! -f "$CONFIG_FILE" ]; then
+        mark="${GREEN}✓${NC}"
+    fi
+    printf "  %s [%b] %2d. %-30s (默认延迟 %ss)\n" "" "$mark" "$idx" "$display" "$delay"
+    idx=$((idx + 1))
+done
+echo ""
+echo -e "  ${CYAN}输入编号启用渠道（逗号分隔，如 1,2,7），直接回车保持当前配置${NC}"
+
+printf "  选择: "
+read -r selection
+
+# 解析选择
+declare -A ENABLED_CHANNELS
+if [ -n "$selection" ]; then
+    IFS=',' read -ra NUMS <<< "$selection"
+    for num in "${NUMS[@]}"; do
+        num=$(echo "$num" | tr -d ' ')
+        if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le ${#CHANNEL_DEFS[@]} ]; then
+            IFS='|' read -r name _ _ _ <<< "${CHANNEL_DEFS[$((num - 1))]}"
+            ENABLED_CHANNELS["$name"]=1
+        fi
+    done
+else
+    # 保持当前配置
+    if [ -f "$CONFIG_FILE" ]; then
+        while IFS= read -r name; do
+            ENABLED_CHANNELS["$name"]=1
+        done < <(jq -r '.channels // {} | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE" 2>/dev/null)
+    fi
+    # macOS fallback
+    if $IS_MACOS && [ ${#ENABLED_CHANNELS[@]} -eq 0 ]; then
+        ENABLED_CHANNELS["macos"]=1
+    fi
+fi
+
 echo ""
 
-# --- Bark Key ---
-if [ -n "$D_BARK_KEY" ]; then
-    BARK_HINT="${D_BARK_KEY:0:8}..."
-else
-    BARK_HINT="可选，回车跳过"
+# 为每个启用的 channel 收集凭证
+declare -A CHANNEL_CONFIGS
+
+for def in "${CHANNEL_DEFS[@]}"; do
+    IFS='|' read -r name display delay fields <<< "$def"
+
+    if [ "${ENABLED_CHANNELS[$name]:-}" != "1" ]; then
+        continue
+    fi
+
+    if [ -z "$fields" ]; then
+        # 无凭证的 channel（macOS）
+        continue
+    fi
+
+    echo -e "  ${CYAN}配置 ${display}:${NC}"
+
+    IFS=';' read -ra FIELD_DEFS <<< "$fields"
+    for fdef in "${FIELD_DEFS[@]}"; do
+        IFS=':' read -r fkey fdesc <<< "$fdef"
+
+        # 提取默认值提示
+        default_hint=""
+        if [[ "$fdesc" =~ \[(.+)\] ]]; then
+            default_hint="${BASH_REMATCH[1]}"
+            fdesc=$(echo "$fdesc" | sed 's/ *\[.*\]//')
+        fi
+
+        current=$(_read_json ".channels.${name}.${fkey}" "$default_hint")
+        if [ -n "$current" ]; then
+            if [ ${#current} -gt 20 ]; then
+                hint="${current:0:20}..."
+            else
+                hint="$current"
+            fi
+        else
+            hint="必填"
+        fi
+
+        printf "    %s [%s]: " "$fdesc" "$hint"
+        read -r input
+        CHANNEL_CONFIGS["${name}.${fkey}"]="${input:-$current}"
+    done
+    echo ""
+done
+
+# 构建 JSON 配置
+CONFIG_JSON='{"channels":{},"rate_limit":10}'
+
+# 读取已有 rate_limit
+if [ -f "$CONFIG_FILE" ]; then
+    old_rate=$(jq -r '.rate_limit // 10' "$CONFIG_FILE")
+    CONFIG_JSON=$(echo "$CONFIG_JSON" | jq --argjson rl "$old_rate" '.rate_limit = $rl')
 fi
-printf "  Bark Key [%s]: " "$BARK_HINT"
-read -r input
-BARK_KEY="${input:-$D_BARK_KEY}"
 
-# --- Bark Server ---
-printf "  Bark Server [%s]: " "$D_BARK_SERVER"
-read -r input
-BARK_SERVER="${input:-$D_BARK_SERVER}"
+for def in "${CHANNEL_DEFS[@]}"; do
+    IFS='|' read -r name display delay fields <<< "$def"
 
-# --- 企业微信 ---
-if [ -n "$D_QYWX_WEBHOOK" ]; then
-    QYWX_HINT="已设置"
-else
-    QYWX_HINT="可选，回车跳过"
-fi
-printf "  企业微信 Webhook [%s]: " "$QYWX_HINT"
-read -r input
-QYWX_WEBHOOK="${input:-$D_QYWX_WEBHOOK}"
+    enabled="false"
+    [ "${ENABLED_CHANNELS[$name]:-}" = "1" ] && enabled="true"
 
-# --- 延迟 ---
-printf "  Bark 推送延迟/秒 [%s]: " "$D_BARK_DELAY"
-read -r input
-BARK_DELAY="${input:-$D_BARK_DELAY}"
+    # 构建 channel 对象
+    ch_json=$(jq -n --argjson enabled "$enabled" --argjson delay "$delay" '{enabled: $enabled, delay: $delay}')
 
-printf "  企业微信推送延迟/秒 [%s]: " "$D_WECHAT_DELAY"
-read -r input
-WECHAT_DELAY="${input:-$D_WECHAT_DELAY}"
+    # macOS 特殊字段
+    if [ "$name" = "macos" ]; then
+        ch_json=$(echo "$ch_json" | jq '. + {sound: "Glass", events: ["notification"]}')
+    fi
 
-echo ""
+    # 添加凭证字段
+    if [ -n "$fields" ]; then
+        IFS=';' read -ra FIELD_DEFS <<< "$fields"
+        for fdef in "${FIELD_DEFS[@]}"; do
+            IFS=':' read -r fkey fdesc <<< "$fdef"
+            val="${CHANNEL_CONFIGS["${name}.${fkey}"]:-}"
+
+            # 尝试从已有配置读取
+            if [ -z "$val" ] && [ -f "$CONFIG_FILE" ]; then
+                val=$(jq -r ".channels.\"${name}\".\"${fkey}\" // empty" "$CONFIG_FILE" 2>/dev/null) || true
+            fi
+
+            # 提取方括号中的默认值
+            if [ -z "$val" ] && [[ "$fdesc" =~ \[(.+)\] ]]; then
+                val="${BASH_REMATCH[1]}"
+            fi
+
+            if [ -n "$val" ]; then
+                ch_json=$(echo "$ch_json" | jq --arg v "$val" --arg k "$fkey" '.[$k] = $v')
+            fi
+        done
+    fi
+
+    CONFIG_JSON=$(echo "$CONFIG_JSON" | jq --argjson ch "$ch_json" --arg name "$name" '.channels[$name] = $ch')
+done
 
 # 写入配置文件
 mkdir -p "$HOOKS_DIR"
-cat > "$CONFIG_FILE" << EOF
-# Claude Code 通知推送配置（由 install.sh 生成，可手动编辑）
-BARK_KEY="${BARK_KEY}"
-BARK_SERVER="${BARK_SERVER}"
-QYWX_WEBHOOK="${QYWX_WEBHOOK}"
-BARK_DELAY=${BARK_DELAY}
-WECHAT_DELAY=${WECHAT_DELAY}
-MACOS_DELAY=3
-RATE_LIMIT=10
-EOF
-
+echo "$CONFIG_JSON" | jq '.' > "$CONFIG_FILE"
 echo -e "  ${GREEN}✓${NC} 配置已写入 $CONFIG_FILE"
 
 # ============================================================
 #  [3/4] 安装脚本
 # ============================================================
 echo -e "${YELLOW}[3/4]${NC} 安装脚本..."
-mkdir -p "$STATE_DIR"
-cp "$SCRIPT_DIR/notify.sh" "$HOOKS_DIR/notify.sh"
-cp "$SCRIPT_DIR/clear_pending.sh" "$HOOKS_DIR/clear_pending.sh"
-chmod +x "$HOOKS_DIR/notify.sh" "$HOOKS_DIR/clear_pending.sh"
-echo -e "  ${GREEN}✓${NC} 脚本已复制到 $HOOKS_DIR"
-
-if $IS_MACOS; then
-    echo -e "  ${GREEN}✓${NC} macOS 系统通知已启用（Notification 事件，延迟 3s）"
-fi
+mkdir -p "$STATE_DIR" "$SCRIPTS_DIR/channels"
+cp "$SCRIPT_DIR/scripts/notify.sh" "$SCRIPTS_DIR/notify.sh"
+cp "$SCRIPT_DIR/scripts/clear_pending.sh" "$SCRIPTS_DIR/clear_pending.sh"
+cp "$SCRIPT_DIR/scripts/channels/"*.sh "$SCRIPTS_DIR/channels/"
+chmod +x "$SCRIPTS_DIR/notify.sh" "$SCRIPTS_DIR/clear_pending.sh" "$SCRIPTS_DIR/channels/"*.sh
+echo -e "  ${GREEN}✓${NC} 脚本已复制到 $SCRIPTS_DIR"
 
 # ============================================================
 #  [4/4] 配置 hooks
 # ============================================================
 echo -e "${YELLOW}[4/4]${NC} 配置 hooks..."
-HOOKS_JSON=$(cat "$SCRIPT_DIR/settings.json")
+
+# 生成 hooks JSON，路径替换为实际安装路径
+HOOKS_JSON=$(cat "$SCRIPT_DIR/hooks/hooks.json" | sed "s|\\\${CLAUDE_PLUGIN_ROOT}/scripts|${SCRIPTS_DIR}|g")
 
 if [ -f "$SETTINGS_FILE" ]; then
     BACKUP="${SETTINGS_FILE}.backup.$(date +%Y%m%d%H%M%S)"
@@ -174,33 +309,32 @@ fi
 #  验证
 # ============================================================
 echo ""
-WARN=0
-if [ -z "$BARK_KEY" ] && [ -z "$QYWX_WEBHOOK" ]; then
-    if $IS_MACOS; then
-        echo -e "  ${GREEN}✓${NC} macOS 系统通知可用"
-        echo -e "  ℹ️  未配置远程推送，仅本地通知"
-    else
-        echo -e "  ${YELLOW}⚠${NC} 未配置任何推送渠道"
-        WARN=1
-    fi
+ENABLED_COUNT=0
+for name in "${!ENABLED_CHANNELS[@]}"; do
+    [ "${ENABLED_CHANNELS[$name]}" = "1" ] && ENABLED_COUNT=$((ENABLED_COUNT + 1))
+done
+
+if [ "$ENABLED_COUNT" -eq 0 ]; then
+    echo -e "  ${YELLOW}⚠${NC} 未启用任何推送渠道"
 else
-    [ -n "$BARK_KEY" ] && echo -e "  ${GREEN}✓${NC} Bark 推送已配置"
-    [ -n "$QYWX_WEBHOOK" ] && echo -e "  ${GREEN}✓${NC} 企业微信推送已配置"
-    $IS_MACOS && echo -e "  ${GREEN}✓${NC} macOS 系统通知已启用"
+    echo "  已启用的渠道："
+    for def in "${CHANNEL_DEFS[@]}"; do
+        IFS='|' read -r name display delay _ <<< "$def"
+        if [ "${ENABLED_CHANNELS[$name]:-}" = "1" ]; then
+            echo -e "  ${GREEN}✓${NC} ${display} (延迟 ${delay}s)"
+        fi
+    done
 fi
 
 echo ""
 echo "========================================="
-if [ "$WARN" -eq 0 ]; then
-    echo -e "  ${GREEN}✅ 安装完成！${NC}"
-else
-    echo -e "  ${GREEN}✅ 脚本已安装${NC}，请补充推送配置"
-fi
+echo -e "  ${GREEN}✅ 安装完成！${NC}"
 echo ""
 echo "  下一步:"
-echo "  1. 运行测试: bash $SCRIPT_DIR/test_notify.sh all"
+echo "  1. 测试: bash $SCRIPT_DIR/test_notify.sh"
 echo "  2. 重启 Claude Code 使 hooks 生效"
-echo "  3. 调试日志: tail -f /tmp/claude-hooks-debug.log"
+echo "  3. 调试: tail -f /tmp/claude-hooks-debug.log"
 echo ""
 echo "  修改配置: 编辑 $CONFIG_FILE"
+echo "  插件模式: claude --plugin-dir $SCRIPT_DIR"
 echo "========================================="

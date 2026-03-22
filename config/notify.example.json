@@ -1,0 +1,66 @@
+{
+  "channels": {
+    "macos": {
+      "enabled": true,
+      "delay": 3,
+      "sound": "Glass",
+      "events": ["notification"]
+    },
+    "bark": {
+      "enabled": false,
+      "delay": 15,
+      "key": "your-bark-key",
+      "server": "https://api.day.app"
+    },
+    "telegram": {
+      "enabled": false,
+      "delay": 5,
+      "bot_token": "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+      "chat_id": "123456789"
+    },
+    "pushover": {
+      "enabled": false,
+      "delay": 15,
+      "app_token": "your-app-token",
+      "user_key": "your-user-key"
+    },
+    "ntfy": {
+      "enabled": false,
+      "delay": 15,
+      "topic": "my-claude-notify",
+      "server": "https://ntfy.sh"
+    },
+    "gotify": {
+      "enabled": false,
+      "delay": 15,
+      "server": "https://gotify.example.com",
+      "app_token": "your-app-token"
+    },
+    "wechat": {
+      "enabled": false,
+      "delay": 300,
+      "webhook": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your-key"
+    },
+    "feishu": {
+      "enabled": false,
+      "delay": 300,
+      "webhook": "https://open.feishu.cn/open-apis/bot/v2/hook/your-token"
+    },
+    "dingtalk": {
+      "enabled": false,
+      "delay": 300,
+      "webhook": "https://oapi.dingtalk.com/robot/send?access_token=your-token"
+    },
+    "slack": {
+      "enabled": false,
+      "delay": 300,
+      "webhook": "https://hooks.slack.com/services/T.../B.../xxx"
+    },
+    "discord": {
+      "enabled": false,
+      "delay": 300,
+      "webhook": "https://discord.com/api/webhooks/id/token"
+    }
+  },
+  "rate_limit": 10
+}

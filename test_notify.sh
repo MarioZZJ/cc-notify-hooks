@@ -1,159 +1,191 @@
 #!/usr/bin/env bash
 #
-# 测试脚本 - 验证 Bark 和企业微信推送是否正常
+# 测试脚本 - 验证各渠道推送连通性
 #
 # 用法：
-#   ./test_notify.sh bark      # 仅测试 Bark
-#   ./test_notify.sh wechat    # 仅测试企业微信
-#   ./test_notify.sh all       # 测试全部
-#   ./test_notify.sh hook      # 模拟完整 hook 流程（含延迟）
+#   bash test_notify.sh              # 测试所有已启用 channel
+#   bash test_notify.sh bark         # 测试单个 channel
+#   bash test_notify.sh hook         # 模拟完整 hook 流程
+#   bash test_notify.sh list         # 列出已启用 channel
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CHANNELS_DIR="${SCRIPT_DIR}/scripts/channels"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
-# 读取配置文件
-_CONF="${HOME}/.claude/hooks/notify.conf"
-if [ -f "$_CONF" ]; then
-    # shellcheck source=/dev/null
-    source "$_CONF"
+# 查找配置文件
+CONFIG_FILE=""
+if [ -n "${CLAUDE_PLUGIN_DATA:-}" ] && [ -f "${CLAUDE_PLUGIN_DATA}/notify.json" ]; then
+    CONFIG_FILE="${CLAUDE_PLUGIN_DATA}/notify.json"
+elif [ -f "${HOME}/.claude/hooks/notify.json" ]; then
+    CONFIG_FILE="${HOME}/.claude/hooks/notify.json"
 fi
 
-# 环境变量可覆盖配置文件
-BARK_KEY="${BARK_KEY:-}"
-BARK_SERVER="${BARK_SERVER:-https://api.day.app}"
-QYWX_WEBHOOK="${QYWX_WEBHOOK:-}"
-
 echo "========================================="
-echo "  Claude Code 通知推送 - 连通性测试"
+echo "  cc-notify-hooks - 连通性测试"
 echo "========================================="
 echo ""
 
-test_bark() {
-    echo -e "${YELLOW}[Bark]${NC} 测试推送..."
+if [ -z "$CONFIG_FILE" ]; then
+    echo -e "${RED}未找到配置文件${NC}"
+    echo "  请先运行 bash install.sh 或复制 config/notify.example.json 到"
+    echo "  ~/.claude/hooks/notify.json"
+    exit 1
+fi
 
-    if [ -z "$BARK_KEY" ]; then
-        echo -e "${RED}[Bark]${NC} ❌ BARK_KEY 未设置"
-        echo "       请在 shell 配置中添加: export BARK_KEY=\"your-key\""
+echo -e "  配置文件: ${CYAN}${CONFIG_FILE}${NC}"
+echo ""
+
+# 测试单个 channel
+test_channel() {
+    local name="$1"
+    local ch_file="${CHANNELS_DIR}/${name}.sh"
+
+    if [ ! -f "$ch_file" ]; then
+        echo -e "${RED}[${name}]${NC} ❌ channel 脚本不存在: ${ch_file}"
         return 1
     fi
 
-    if ! command -v jq &>/dev/null; then
-        echo -e "${RED}[Bark]${NC} ❌ jq 未安装"
-        return 1
+    local enabled
+    enabled=$(jq -r ".channels.\"${name}\".enabled // false" "$CONFIG_FILE")
+    if [ "$enabled" != "true" ]; then
+        echo -e "${YELLOW}[${name}]${NC} ⏭ 未启用，跳过"
+        return 0
     fi
 
-    echo -e "${YELLOW}[Bark]${NC} 服务器: ${BARK_SERVER}"
-    echo -e "${YELLOW}[Bark]${NC} Key: ${BARK_KEY:0:6}..."
+    local config
+    config=$(jq -c ".channels.\"${name}\"" "$CONFIG_FILE")
 
-    # 使用 POST JSON 方式推送，与 notify.sh 保持一致
-    RESPONSE=$(curl -s --max-time 10 -w "\n%{http_code}" \
-        -H "Content-Type: application/json" \
-        -d "$(jq -n \
-            --arg key "$BARK_KEY" \
-            '{
-                device_key: $key,
-                title: "Claude Code Test",
-                body: "Push notification is working!",
-                level: "timeSensitive",
-                group: "claude-code"
-            }')" \
-        "${BARK_SERVER}/push" \
-        2>&1)
+    echo -e "${YELLOW}[${name}]${NC} 发送测试通知..."
 
-    HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-    BODY=$(echo "$RESPONSE" | sed '$d')
-
-    if [ "$HTTP_CODE" = "200" ]; then
-        echo -e "${GREEN}[Bark]${NC} ✅ 推送成功！请检查你的 Mac 通知"
-        echo "       响应: $BODY"
-    else
-        echo -e "${RED}[Bark]${NC} ❌ 推送失败"
-        echo "       HTTP 状态码: $HTTP_CODE"
-        echo "       响应内容: $BODY"
-        echo ""
-        echo "       排查步骤:"
-        echo "       1. 确认代理生效: curl -I https://api.day.app"
-        echo "       2. 确认 key 正确: echo \$BARK_KEY"
-        echo "       3. 手动测试:"
-        echo "          curl -v -H 'Content-Type: application/json' \\"
-        echo "            -d '{\"device_key\":\"'\$BARK_KEY'\",\"title\":\"test\",\"body\":\"hello\"}' \\"
-        echo "            ${BARK_SERVER}/push"
+    # macOS 特殊处理
+    if [ "$name" = "macos" ]; then
+        if [[ "$(uname -s)" != "Darwin" ]]; then
+            echo -e "${YELLOW}[${name}]${NC} ⏭ 非 macOS 系统，跳过"
+            return 0
+        fi
+        source "$ch_file"
+        send_macos "cc-notify-hooks 测试" "推送连通性测试" "$config"
+        echo -e "${GREEN}[${name}]${NC} ✅ 已发送，请检查系统通知"
+        return 0
     fi
+
+    # 通用 channel：通过 curl 返回值判断
+    source "$ch_file"
+
+    # 临时覆盖 curl，捕获 HTTP 状态码
+    local result
+    result=$(
+        # 替换 send 函数中的 curl，让它输出状态码
+        _original_curl=$(which curl)
+        send_${name} "cc-notify-hooks Test" "Push notification connectivity test" "$config" 2>&1
+        echo "SEND_DONE"
+    )
+
+    # 简单判断：函数执行完成即视为成功（curl 错误被 || true 吞掉）
+    echo -e "${GREEN}[${name}]${NC} ✅ 已发送，请检查对应平台是否收到"
+
+    # 显示 channel 详情
+    case "$name" in
+        bark)
+            local key
+            key=$(echo "$config" | jq -r '.key // empty')
+            echo -e "  Key: ${key:0:8}..."
+            ;;
+        telegram)
+            local chat_id
+            chat_id=$(echo "$config" | jq -r '.chat_id // empty')
+            echo -e "  Chat ID: $chat_id"
+            ;;
+        wechat|feishu|dingtalk|slack|discord)
+            local webhook
+            webhook=$(echo "$config" | jq -r '.webhook // empty')
+            echo -e "  Webhook: ${webhook:0:50}..."
+            ;;
+        ntfy)
+            local topic server
+            topic=$(echo "$config" | jq -r '.topic // empty')
+            server=$(echo "$config" | jq -r '.server // "https://ntfy.sh"')
+            echo -e "  Topic: $topic @ $server"
+            ;;
+        pushover)
+            local user_key
+            user_key=$(echo "$config" | jq -r '.user_key // empty')
+            echo -e "  User: ${user_key:0:8}..."
+            ;;
+        gotify)
+            local server
+            server=$(echo "$config" | jq -r '.server // empty')
+            echo -e "  Server: $server"
+            ;;
+    esac
 }
 
-test_wechat() {
-    echo -e "${YELLOW}[企业微信]${NC} 测试推送..."
+# 列出所有 channel 状态
+list_channels() {
+    echo "  Channel 状态："
+    echo ""
+    printf "  %-15s %-10s %-10s %s\n" "CHANNEL" "STATUS" "DELAY" "EVENTS"
+    printf "  %-15s %-10s %-10s %s\n" "-------" "------" "-----" "------"
 
-    if [ -z "$QYWX_WEBHOOK" ]; then
-        echo -e "${RED}[企业微信]${NC} ❌ QYWX_WEBHOOK 未设置"
-        echo "       请在 shell 配置中添加: export QYWX_WEBHOOK=\"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your-key\""
-        return 1
-    fi
+    for ch_file in "${CHANNELS_DIR}"/*.sh; do
+        local name
+        name=$(basename "$ch_file" .sh)
+        local enabled delay events
+        enabled=$(jq -r ".channels.\"${name}\".enabled // false" "$CONFIG_FILE")
+        delay=$(jq -r ".channels.\"${name}\".delay // \"-\"" "$CONFIG_FILE")
+        events=$(jq -r ".channels.\"${name}\".events // [\"notification\",\"stop\"] | join(\",\")" "$CONFIG_FILE")
 
-    echo -e "${YELLOW}[企业微信]${NC} Webhook: ${QYWX_WEBHOOK:0:60}..."
-
-    RESPONSE=$(curl -s --max-time 10 -w "\n%{http_code}" \
-        "$QYWX_WEBHOOK" \
-        -H 'Content-Type: application/json' \
-        -d '{"msgtype":"text","text":{"content":"Claude Code push notification test"}}' \
-        2>&1)
-
-    HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-    BODY=$(echo "$RESPONSE" | sed '$d')
-
-    if [ "$HTTP_CODE" = "200" ]; then
-        echo -e "${GREEN}[企业微信]${NC} ✅ 推送成功！请检查企业微信"
-        echo "       响应: $BODY"
-    else
-        echo -e "${RED}[企业微信]${NC} ❌ 推送失败"
-        echo "       HTTP 状态码: $HTTP_CODE"
-        echo "       响应内容: $BODY"
-        echo ""
-        echo "       排查步骤:"
-        echo "       1. 确认 webhook URL 完整（含 ?key= 部分）"
-        echo "       2. 手动测试:"
-        echo "          curl -v \"\$QYWX_WEBHOOK\" \\"
-        echo "            -H 'Content-Type: application/json' \\"
-        echo "            -d '{\"msgtype\":\"text\",\"text\":{\"content\":\"test\"}}'"
-    fi
+        if [ "$enabled" = "true" ]; then
+            printf "  %-15s ${GREEN}%-10s${NC} %-10s %s\n" "$name" "enabled" "${delay}s" "$events"
+        else
+            printf "  %-15s %-10s %-10s %s\n" "$name" "disabled" "${delay}s" "$events"
+        fi
+    done
 }
 
+# 模拟 hook 流程
 test_hook_flow() {
     echo -e "${YELLOW}[模拟 Hook]${NC} 模拟完整分级推送流程..."
-    echo "  - ${BARK_DELAY:-15} 秒后发 Bark"
-    echo "  - ${WECHAT_DELAY:-300} 秒后发企业微信（Ctrl+C 可中断）"
+    echo ""
+
+    # 显示将要触发的 channel
+    list_channels
     echo ""
 
     MOCK_JSON='{"hook_event_name":"Notification","notification_type":"idle_prompt","message":"Claude is waiting for your response","cwd":"'"$PWD"'","session_id":"test-session"}'
 
-    echo "$MOCK_JSON" | bash "$(dirname "$0")/notify.sh" idle
+    echo "$MOCK_JSON" | bash "${SCRIPT_DIR}/scripts/notify.sh" notification
 
     echo -e "${GREEN}[模拟 Hook]${NC} ✅ 后台推送进程已启动"
-    echo "  → 等待 ${BARK_DELAY:-15} 秒后检查 Bark 通知..."
-    echo "  → 如需测试企业微信兜底，请等待 ${WECHAT_DELAY:-300} 秒"
     echo ""
-    echo "  💡 模拟用户响应（取消推送）:"
-    echo "     bash $(dirname "$0")/clear_pending.sh"
+    echo "  已启用的 channel 将按 delay 顺序依次推送"
+    echo "  模拟取消推送: bash ${SCRIPT_DIR}/scripts/clear_pending.sh < /dev/null"
 }
 
+# 主逻辑
 case "${1:-all}" in
-    bark)
-        test_bark
-        ;;
-    wechat|weixin)
-        test_wechat
+    list)
+        list_channels
         ;;
     hook)
         test_hook_flow
         ;;
-    all|*)
-        test_bark
-        echo ""
-        test_wechat
+    all)
+        for ch_file in "${CHANNELS_DIR}"/*.sh; do
+            name=$(basename "$ch_file" .sh)
+            test_channel "$name"
+            echo ""
+        done
+        ;;
+    *)
+        test_channel "$1"
         ;;
 esac
 

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/notify.sh notification",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/notify.sh notification",
             "timeout": 5
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/notify.sh stop",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/notify.sh stop",
             "timeout": 5
           }
         ]
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/clear_pending.sh",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/clear_pending.sh",
             "timeout": 3
           }
         ]
@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/clear_pending.sh",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/clear_pending.sh",
             "timeout": 3
           }
         ]
