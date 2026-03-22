@@ -35,6 +35,18 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/clear_pending.sh",
+            "timeout": 3
+          }
+        ]
+      }
     ]
   }
 }

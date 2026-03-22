@@ -15,6 +15,14 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
+# 读取配置文件
+_CONF="${HOME}/.claude/hooks/notify.conf"
+if [ -f "$_CONF" ]; then
+    # shellcheck source=/dev/null
+    source "$_CONF"
+fi
+
+# 环境变量可覆盖配置文件
 BARK_KEY="${BARK_KEY:-}"
 BARK_SERVER="${BARK_SERVER:-https://api.day.app}"
 QYWX_WEBHOOK="${QYWX_WEBHOOK:-}"
