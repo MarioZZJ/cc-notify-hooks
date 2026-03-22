@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cc-notify-hooks — AI Agent 时代的注意力调度器</title>
+<meta name="description" content="Claude Code 分级推送通知插件。11 个渠道，短通知即时触达，长通知异步兜底。人可以闲着，Agent 不可以。">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;
+    --text:#e8e6e3;--text2:#9b98a0;--accent:#6c5ce7;--accent2:#a29bfe;
+    --green:#00b894;--orange:#fdcb6e;--red:#e17055;
+    --radius:12px;--glow:0 0 40px rgba(108,92,231,.15);
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
+
+  /* Hero */
+  .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+  .hero::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(108,92,231,.12) 0%,transparent 70%);top:-100px;right:-100px;pointer-events:none}
+  .hero::after{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(0,184,148,.08) 0%,transparent 70%);bottom:-80px;left:-80px;pointer-events:none}
+  .badge{display:inline-block;padding:.35rem 1rem;border-radius:99px;border:1px solid rgba(108,92,231,.3);color:var(--accent2);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.5rem;backdrop-filter:blur(4px)}
+  .hero h1{font-size:clamp(2.2rem,6vw,4.2rem);font-weight:800;line-height:1.15;max-width:800px;margin-bottom:1.5rem;letter-spacing:-.02em}
+  .hero h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .hero p.subtitle{font-size:clamp(1rem,2.5vw,1.3rem);color:var(--text2);max-width:640px;margin-bottom:2.5rem}
+  .hero-cta{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
+  .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;border-radius:99px;font-size:.95rem;font-weight:600;text-decoration:none;transition:all .2s}
+  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 20px rgba(108,92,231,.35)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(108,92,231,.45)}
+  .btn-outline{border:1px solid rgba(255,255,255,.15);color:var(--text);background:transparent}
+  .btn-outline:hover{border-color:var(--accent2);color:var(--accent2)}
+
+  .scroll-hint{position:absolute;bottom:2rem;animation:bounce 2s infinite}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+
+  /* Sections */
+  section{padding:5rem 1.5rem;max-width:1100px;margin:0 auto}
+  .section-label{color:var(--accent2);font-size:.75rem;letter-spacing:.15em;text-transform:uppercase;font-weight:600;margin-bottom:.5rem}
+  section h2{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;margin-bottom:1rem;letter-spacing:-.01em}
+  section h2+p{color:var(--text2);font-size:1.05rem;max-width:600px;margin-bottom:2.5rem}
+
+  /* Pain Points */
+  .pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem}
+  .pain-card{background:var(--surface);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:2rem;transition:border-color .2s}
+  .pain-card:hover{border-color:rgba(108,92,231,.25)}
+  .pain-icon{font-size:2rem;margin-bottom:1rem}
+  .pain-card h3{font-size:1.1rem;margin-bottom:.5rem}
+  .pain-card p{color:var(--text2);font-size:.92rem}
+
+  /* How it works */
+  .pipeline{position:relative;padding-left:3rem}
+  .pipeline::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--accent),var(--green))}
+  .step{position:relative;margin-bottom:2.5rem}
+  .step::before{content:'';position:absolute;left:-3rem;top:.35rem;width:12px;height:12px;border-radius:50%;border:2px solid var(--accent);background:var(--bg)}
+  .step.active::before{background:var(--accent);box-shadow:0 0 12px rgba(108,92,231,.5)}
+  .step-time{display:inline-block;font-size:.75rem;padding:.2rem .6rem;border-radius:4px;background:rgba(108,92,231,.15);color:var(--accent2);font-weight:600;margin-bottom:.4rem}
+  .step-time.long{background:rgba(0,184,148,.12);color:var(--green)}
+  .step h3{font-size:1.05rem;margin-bottom:.25rem}
+  .step p{color:var(--text2);font-size:.9rem}
+  .step-cancel{background:rgba(225,112,85,.08);border:1px dashed rgba(225,112,85,.25);border-radius:8px;padding:1rem 1.5rem;margin-top:1rem}
+  .step-cancel p{color:var(--red);font-size:.85rem;font-weight:500}
+
+  /* Channels */
+  .channel-group{margin-bottom:2.5rem}
+  .channel-group h3{font-size:1rem;color:var(--text2);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+  .channel-group h3 span{display:inline-block;width:8px;height:8px;border-radius:50%}
+  .short-dot{background:var(--accent)}
+  .long-dot{background:var(--green)}
+  .channel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem}
+  .channel{background:var(--surface);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:.8rem 1rem;text-align:center;font-size:.85rem;font-weight:500;transition:all .2s}
+  .channel:hover{border-color:rgba(108,92,231,.3);transform:translateY(-2px)}
+  .channel small{display:block;color:var(--text2);font-weight:400;font-size:.75rem;margin-top:.2rem}
+
+  /* Install */
+  .install-tabs{display:flex;gap:0;margin-bottom:0;border-bottom:1px solid rgba(255,255,255,.08)}
+  .tab{padding:.6rem 1.5rem;font-size:.85rem;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+  .tab.active{color:var(--accent2);border-bottom-color:var(--accent)}
+  .tab-content{display:none;background:var(--surface);border:1px solid rgba(255,255,255,.06);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:1.5rem;margin-bottom:1.5rem}
+  .tab-content.active{display:block}
+  pre{background:var(--surface2);border-radius:8px;padding:1rem 1.2rem;overflow-x:auto;font-size:.85rem;line-height:1.8;color:var(--accent2);font-family:'SF Mono',Monaco,'Cascadia Code',Menlo,monospace}
+  code{font-family:inherit}
+  .copy-btn{float:right;background:rgba(255,255,255,.06);border:none;color:var(--text2);padding:.3rem .7rem;border-radius:4px;font-size:.75rem;cursor:pointer;transition:all .15s}
+  .copy-btn:hover{background:rgba(108,92,231,.2);color:var(--accent2)}
+
+  /* Manifesto */
+  .manifesto{background:linear-gradient(135deg,rgba(108,92,231,.06),rgba(0,184,148,.04));border:1px solid rgba(108,92,231,.12);border-radius:16px;padding:3rem;margin:3rem 0;text-align:center}
+  .manifesto blockquote{font-size:clamp(1.1rem,3vw,1.5rem);font-weight:600;line-height:1.5;max-width:700px;margin:0 auto 1.5rem;font-style:normal}
+  .manifesto blockquote em{font-style:normal;color:var(--accent2)}
+  .manifesto p{color:var(--text2);font-size:.95rem;max-width:550px;margin:0 auto}
+
+  /* Features */
+  .feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.2rem}
+  .feat{background:var(--surface);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:1.5rem}
+  .feat h3{font-size:.95rem;margin-bottom:.4rem;display:flex;align-items:center;gap:.5rem}
+  .feat p{color:var(--text2);font-size:.85rem}
+
+  /* Footer */
+  footer{text-align:center;padding:3rem 1.5rem;color:var(--text2);font-size:.8rem;border-top:1px solid rgba(255,255,255,.05)}
+  footer a{color:var(--accent2);text-decoration:none}
+  footer a:hover{text-decoration:underline}
+
+  /* Mobile */
+  @media(max-width:640px){
+    .hero{min-height:auto;padding:4rem 1.5rem}
+    section{padding:3rem 1.5rem}
+    .pipeline{padding-left:2.5rem}
+    .step::before{left:-2.5rem}
+    .manifesto{padding:2rem 1.5rem}
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<header class="hero">
+  <span class="badge">Claude Code Plugin</span>
+  <h1>人可以闲着<br><em>Agent 不可以</em></h1>
+  <p class="subtitle">cc-notify-hooks — Agent 时代的注意力调度器。11 个渠道分级推送，让你的 Claude Code 永不空转等待。</p>
+  <div class="hero-cta">
+    <a href="#install" class="btn btn-primary">立即安装</a>
+    <a href="https://github.com/MarioZZJ/cc-notify-hooks" class="btn btn-outline">GitHub</a>
+  </div>
+  <div class="scroll-hint" style="color:var(--text2);font-size:.8rem">&#8595;</div>
+</header>
+
+<!-- Pain Points -->
+<section>
+  <div class="section-label">问题</div>
+  <h2>Agent 在等你，你不知道</h2>
+  <p>这些场景每天都在发生。</p>
+  <div class="pain-grid">
+    <div class="pain-card">
+      <div class="pain-icon">&#9203;</div>
+      <h3>权限确认卡了 20 分钟</h3>
+      <p>Claude 需要你点一下"允许"，你切到浏览器看了篇文章，回来发现它等了你半小时。</p>
+    </div>
+    <div class="pain-card">
+      <div class="pain-icon">&#128564;</div>
+      <h3>任务完成了但你不知道</h3>
+      <p>跑了个大重构，你去喝咖啡。回来一看——10 分钟前就完成了，白等了。</p>
+    </div>
+    <div class="pain-card">
+      <div class="pain-icon">&#127918;</div>
+      <h3>多个 Agent 同时跑</h3>
+      <p>3 个终端窗口 3 个任务。你根本记不住哪个需要你介入，哪个还在自己跑。</p>
+    </div>
+    <div class="pain-card">
+      <div class="pain-icon">&#128170;</div>
+      <h3>离开电脑就失联</h3>
+      <p>开个会回来，发现 Agent 在第 3 分钟就卡住了，剩下 57 分钟纯浪费。</p>
+    </div>
+  </div>
+</section>
+
+<!-- Manifesto -->
+<section>
+  <div class="manifesto">
+    <blockquote>在 Agent 时代，瓶颈不是算力，<em>是你的注意力</em>。<br>cc-notify-hooks 把注意力的分配权还给你。</blockquote>
+    <p>不需要盯着终端。不需要来回切窗口。Agent 需要你的时候，它会找到你。</p>
+  </div>
+</section>
+
+<!-- How it works -->
+<section>
+  <div class="section-label">机制</div>
+  <h2>短通知 + 长通知，两级调度</h2>
+  <p>推送前检查你是否已响应。回来了就停，没回来就升级。</p>
+
+  <div class="pipeline">
+    <div class="step active">
+      <span class="step-time">0s</span>
+      <h3>事件触发</h3>
+      <p>Claude Code 需要权限确认 / 等待输入 / 任务完成</p>
+    </div>
+    <div class="step active">
+      <span class="step-time">3 ~ 15s</span>
+      <h3>短通知 — 即时触达</h3>
+      <p>macOS 系统弹窗、Telegram 消息、Bark / Pushover / ntfy 手机推送。你可能只是切了个窗口，几秒钟就能看到。</p>
+    </div>
+    <div class="step">
+      <div class="step-cancel">
+        <p>&#10003; 你看到通知回来了？后面的推送自动取消。</p>
+      </div>
+    </div>
+    <div class="step active">
+      <span class="step-time long">5 min</span>
+      <h3>长通知 — 异步兜底</h3>
+      <p>企业微信 / 飞书 / 钉钉 / Slack / Discord 群消息。你可能在开会、在通勤，但最终能从工作沟通工具看到任务状态。</p>
+    </div>
+    <div class="step">
+      <div class="step-cancel">
+        <p>&#10003; 短通知已经解决了？长通知不会再发。零噪音。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Channels -->
+<section>
+  <div class="section-label">渠道</div>
+  <h2>11 个渠道，按需启用</h2>
+  <p>每个渠道的延迟可独立调整。不用的不开，开了的不烦。</p>
+
+  <div class="channel-group">
+    <h3><span class="short-dot"></span> 短通知渠道（即时触达）</h3>
+    <div class="channel-grid">
+      <div class="channel">macOS<small>3s 系统通知</small></div>
+      <div class="channel">Telegram<small>5s Bot 推送</small></div>
+      <div class="channel">Bark<small>15s iOS/Mac</small></div>
+      <div class="channel">Pushover<small>15s 跨平台</small></div>
+      <div class="channel">ntfy<small>15s 开源</small></div>
+      <div class="channel">Gotify<small>15s 自建</small></div>
+    </div>
+  </div>
+
+  <div class="channel-group">
+    <h3><span class="long-dot"></span> 长通知渠道（异步兜底）</h3>
+    <div class="channel-grid">
+      <div class="channel">企业微信<small>5min Webhook</small></div>
+      <div class="channel">飞书<small>5min Webhook</small></div>
+      <div class="channel">钉钉<small>5min Webhook</small></div>
+      <div class="channel">Slack<small>5min Webhook</small></div>
+      <div class="channel">Discord<small>5min Webhook</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- Install -->
+<section id="install">
+  <div class="section-label">安装</div>
+  <h2>两行命令，即刻生效</h2>
+  <p>Claude Code 插件一键安装，或独立脚本部署。</p>
+
+  <div class="install-tabs">
+    <button class="tab active" onclick="switchTab(0)">Plugin 安装</button>
+    <button class="tab" onclick="switchTab(1)">独立安装</button>
+  </div>
+  <div class="tab-content active" id="tab0">
+    <p style="color:var(--text2);font-size:.9rem;margin-bottom:1rem">在 Claude Code 中执行：</p>
+    <pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>/plugin marketplace add MarioZZJ/cc-notify-hooks
+/plugin install cc-notify-hooks@cc-notify-hooks</code></pre>
+    <p style="color:var(--text2);font-size:.85rem;margin-top:1rem">安装后创建配置文件：</p>
+    <pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code># 下载配置模板
+curl -sL https://raw.githubusercontent.com/MarioZZJ/cc-notify-hooks/main/config/notify.example.json \
+  -o ~/.claude/hooks/notify.json
+
+# 编辑配置，启用你需要的渠道
+# 将 "enabled": false 改为 true，填入凭证
+vim ~/.claude/hooks/notify.json</code></pre>
+  </div>
+  <div class="tab-content" id="tab1">
+    <pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>git clone https://github.com/MarioZZJ/cc-notify-hooks.git
+cd cc-notify-hooks
+bash install.sh</code></pre>
+    <p style="color:var(--text2);font-size:.85rem;margin-top:1rem">安装脚本会交互式引导你选择渠道、输入凭证。</p>
+  </div>
+</section>
+
+<!-- Features -->
+<section>
+  <div class="section-label">特性</div>
+  <h2>为 Agent 工作流设计</h2>
+
+  <div class="feat-grid">
+    <div class="feat">
+      <h3>&#9889; 智能取消</h3>
+      <p>用户回来操作，排队中的推送全部作废。不会重复打扰。</p>
+    </div>
+    <div class="feat">
+      <h3>&#128263; 子智能体过滤</h3>
+      <p>子任务不会触发推送，只有主 Agent 的关键事件才会通知你。</p>
+    </div>
+    <div class="feat">
+      <h3>&#128337; Rate Limiting</h3>
+      <p>同类事件 10 秒内只推一次，高频操作不会变成通知轰炸。</p>
+    </div>
+    <div class="feat">
+      <h3>&#128295; 延迟可调</h3>
+      <p>每个渠道独立设置延迟。Telegram 5 秒、Bark 30 秒、飞书 10 分钟，你说了算。</p>
+    </div>
+    <div class="feat">
+      <h3>&#127759; macOS 零配置</h3>
+      <p>macOS 用户装完即用，系统原生通知，不需要注册任何服务。</p>
+    </div>
+    <div class="feat">
+      <h3>&#128268; Claude Code 插件</h3>
+      <p>标准插件结构，/plugin 命令安装，版本更新一键搞定。</p>
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section style="text-align:center;padding-bottom:6rem">
+  <h2 style="margin-bottom:.8rem">别让 Agent 等你</h2>
+  <p style="color:var(--text2);margin-bottom:2rem;font-size:1.05rem">两行命令，从此你的 Claude Code 永不空转。</p>
+  <div class="hero-cta">
+    <a href="#install" class="btn btn-primary">立即安装</a>
+    <a href="https://github.com/MarioZZJ/cc-notify-hooks" class="btn btn-outline">GitHub</a>
+  </div>
+</section>
+
+<footer>
+  <p>MIT License &middot; Made by <a href="https://github.com/MarioZZJ">MarioZZJ</a> &middot; <a href="https://github.com/MarioZZJ/cc-notify-hooks">Source Code</a></p>
+</footer>
+
+<script>
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>{t.classList.toggle('active',j===i)});
+  document.querySelectorAll('.tab-content').forEach((t,j)=>{t.classList.toggle('active',j===i)});
+}
+function copyCode(btn){
+  const code=btn.parentElement.querySelector('code').textContent;
+  navigator.clipboard.writeText(code).then(()=>{btn.textContent='已复制';setTimeout(()=>btn.textContent='复制',1500)});
+}
+</script>
+</body>
+</html>
