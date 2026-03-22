@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "cc-notify-hooks",
-      "source": ".",
+      "source": "./",
       "description": "Tiered push notifications for Claude Code — macOS, Bark, Telegram, Feishu, DingTalk, Slack, Discord, Pushover, ntfy, Gotify",
       "version": "2.0.0",
       "author": {
