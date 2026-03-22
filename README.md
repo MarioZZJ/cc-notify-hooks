@@ -48,7 +48,23 @@ notify.sh ── 清除旧 pending → 创建新 pending
 - **jq** — 解析 JSON（`brew install jq` / `apt install jq`）
 - **curl** — 发送推送（通常已预装）
 
-### 方式一：Claude Code 插件（推荐）
+### 方式一：从 Marketplace 安装（推荐）
+
+在 Claude Code 中执行：
+
+```
+/plugin marketplace add MarioZZJ/cc-notify-hooks
+/plugin install cc-notify-hooks@cc-notify-hooks
+```
+
+安装后，复制配置模板并编辑：
+
+```bash
+cp ~/.claude/plugins/cache/cc-notify-hooks/cc-notify-hooks/*/config/notify.example.json ~/.claude/hooks/notify.json
+# 编辑 ~/.claude/hooks/notify.json，启用你需要的渠道并填入凭证
+```
+
+### 方式二：本地插件模式
 
 ```bash
 git clone https://github.com/MarioZZJ/cc-notify-hooks.git
@@ -57,7 +73,7 @@ claude --plugin-dir ./cc-notify-hooks
 
 配置文件放在 `~/.claude/hooks/notify.json`（从 `config/notify.example.json` 复制修改）。
 
-### 方式二：独立安装
+### 方式三：独立安装（无需插件）
 
 ```bash
 git clone https://github.com/MarioZZJ/cc-notify-hooks.git
