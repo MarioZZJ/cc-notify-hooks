@@ -89,11 +89,13 @@ if [ -n "$D_BARK_KEY" ]; then
 else
     BARK_HINT="可选，回车跳过"
 fi
-read -rp "  Bark Key [$BARK_HINT]: " input
+printf "  Bark Key [%s]: " "$BARK_HINT"
+read -r input
 BARK_KEY="${input:-$D_BARK_KEY}"
 
 # --- Bark Server ---
-read -rp "  Bark Server [$D_BARK_SERVER]: " input
+printf "  Bark Server [%s]: " "$D_BARK_SERVER"
+read -r input
 BARK_SERVER="${input:-$D_BARK_SERVER}"
 
 # --- 企业微信 ---
@@ -102,14 +104,17 @@ if [ -n "$D_QYWX_WEBHOOK" ]; then
 else
     QYWX_HINT="可选，回车跳过"
 fi
-read -rp "  企业微信 Webhook [$QYWX_HINT]: " input
+printf "  企业微信 Webhook [%s]: " "$QYWX_HINT"
+read -r input
 QYWX_WEBHOOK="${input:-$D_QYWX_WEBHOOK}"
 
 # --- 延迟 ---
-read -rp "  Bark 推送延迟/秒 [$D_BARK_DELAY]: " input
+printf "  Bark 推送延迟/秒 [%s]: " "$D_BARK_DELAY"
+read -r input
 BARK_DELAY="${input:-$D_BARK_DELAY}"
 
-read -rp "  企业微信推送延迟/秒 [$D_WECHAT_DELAY]: " input
+printf "  企业微信推送延迟/秒 [%s]: " "$D_WECHAT_DELAY"
+read -r input
 WECHAT_DELAY="${input:-$D_WECHAT_DELAY}"
 
 echo ""

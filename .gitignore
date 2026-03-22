@@ -1,0 +1,4 @@
+state/
+*.log
+notify.conf
+.DS_Store
