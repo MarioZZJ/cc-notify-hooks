@@ -1,24 +1,45 @@
 # cc-notify-hooks
 
-Claude Code 的分级推送通知系统。离开键盘后，按配置的延迟逐级提醒，回来操作即自动取消排队中的推送。
+Claude Code 的分级推送通知系统。支持 **11 个通知渠道**，可作为 **Claude Code 插件** 或独立脚本使用。
 
-支持 **11 个通知渠道**，可作为 **Claude Code 插件** 或独立脚本使用。
+## 为什么需要分级通知？
+
+Claude Code 任务常常需要几秒到几十分钟不等。你不会一直盯着终端，但又需要在合适的时候回来操作。
+
+**cc-notify-hooks 将通知分为两级**：
+
+**短通知（秒级）** — 你可能只是切到了浏览器或聊天窗口。系统通知、手机推送这类**即时触达**的渠道会在几秒内提醒你"Claude 需要你"。如果你看到通知并回来操作了，后续推送自动取消——不会再打扰你。
+
+**长通知（分钟级）** — 你可能离开了电脑、在开会、甚至不在手机旁。企业微信群、飞书群、Slack 频道这类**团队/异步渠道**会在几分钟后兜底通知。即使你错过了短通知，最终也能从工作沟通工具里看到任务状态。
+
+**核心机制**：每次推送前检查用户是否已响应（pending 文件是否还在）。用户一旦回来操作，所有排队中的推送自动作废。短通知解决了问题，长通知就不会再发。
 
 ## 支持的渠道
 
-| 渠道 | 类型 | 默认延迟 | 说明 |
-|------|------|---------|------|
-| **macOS** | 系统通知 | 3s | 零配置，osascript 原生通知 |
-| **Telegram** | Bot API | 5s | 个人/群组消息 |
-| **Bark** | 推送服务 | 15s | iOS / macOS / Android |
-| **Pushover** | 推送服务 | 15s | 跨平台推送 |
-| **ntfy** | 推送服务 | 15s | 开源，支持自建 |
-| **Gotify** | 推送服务 | 15s | 自建推送服务 |
-| **企业微信** | Webhook | 5min | 群机器人 |
-| **飞书** | Webhook | 5min | 群机器人 |
-| **钉钉** | Webhook | 5min | 群机器人 |
-| **Slack** | Webhook | 5min | Incoming Webhook |
-| **Discord** | Webhook | 5min | Channel Webhook |
+### 短通知渠道（即时触达）
+
+适合切屏、短暂离开的场景。
+
+| 渠道 | 默认延迟 | 说明 |
+|------|---------|------|
+| **macOS** | 3s | 零配置，系统原生通知 |
+| **Telegram** | 5s | Bot 消息，手机即时推送 |
+| **Bark** | 15s | iOS / macOS / Android 推送 |
+| **Pushover** | 15s | 跨平台推送服务 |
+| **ntfy** | 15s | 开源推送，支持自建 |
+| **Gotify** | 15s | 自建推送服务 |
+
+### 长通知渠道（异步兜底）
+
+适合离开电脑、开会、或需要团队可见的场景。
+
+| 渠道 | 默认延迟 | 说明 |
+|------|---------|------|
+| **企业微信** | 5min | 群机器人 Webhook |
+| **飞书** | 5min | 群机器人 Webhook |
+| **钉钉** | 5min | 群机器人 Webhook |
+| **Slack** | 5min | Incoming Webhook |
+| **Discord** | 5min | Channel Webhook |
 
 每个渠道的延迟可独立调整。只启用你需要的渠道，其余自动跳过。
 
@@ -30,15 +51,18 @@ Claude Code 事件
     ▼
 notify.sh ── 清除旧 pending → 创建新 pending
     │
-    ├─ 按 delay 排序所有已启用渠道
-    │
-    ├─ delay=3s  → pending 还在？ → macOS 系统通知
-    ├─ delay=5s  → pending 还在？ → Telegram
-    ├─ delay=15s → pending 还在？ → Bark / Pushover / ntfy / ...
-    └─ delay=5m  → pending 还在？ → 企微 / 飞书 / Slack / ...
+    │  ┌── 短通知 ──────────────────────────────────┐
+    ├─ │ 3s  → pending 还在？ → macOS 系统通知      │
+    ├─ │ 5s  → pending 还在？ → Telegram             │
+    ├─ │ 15s → pending 还在？ → Bark / ntfy / ...    │
+    │  └────────────────────────────────────────────┘
+    │  ┌── 长通知 ──────────────────────────────────┐
+    └─ │ 5m  → pending 还在？ → 企微 / 飞书 / Slack │
+       └────────────────────────────────────────────┘
 
-用户交互（发消息 / 点权限按钮）
+用户回来操作（发消息 / 点权限按钮）
     └─→ clear_pending.sh → 清除 pending → 后续推送全部取消
+         （短通知解决了，长通知就不发了）
 ```
 
 ## 安装
@@ -57,12 +81,7 @@ notify.sh ── 清除旧 pending → 创建新 pending
 /plugin install cc-notify-hooks@cc-notify-hooks
 ```
 
-安装后，复制配置模板并编辑：
-
-```bash
-cp ~/.claude/plugins/cache/cc-notify-hooks/cc-notify-hooks/*/config/notify.example.json ~/.claude/hooks/notify.json
-# 编辑 ~/.claude/hooks/notify.json，启用你需要的渠道并填入凭证
-```
+安装后配置推送渠道（见下方[配置](#配置)章节）。
 
 ### 方式二：本地插件模式
 
@@ -70,8 +89,6 @@ cp ~/.claude/plugins/cache/cc-notify-hooks/cc-notify-hooks/*/config/notify.examp
 git clone https://github.com/MarioZZJ/cc-notify-hooks.git
 claude --plugin-dir ./cc-notify-hooks
 ```
-
-配置文件放在 `~/.claude/hooks/notify.json`（从 `config/notify.example.json` 复制修改）。
 
 ### 方式三：独立安装（无需插件）
 
@@ -83,7 +100,7 @@ bash install.sh
 
 安装脚本会交互式引导你选择渠道、输入凭证，自动生成配置并合并 hooks。
 
-安装后**重启 Claude Code** 使 hooks 生效。
+**安装后重启 Claude Code 使 hooks 生效。**
 
 ### 验证
 
@@ -96,7 +113,18 @@ bash test_notify.sh hook         # 模拟完整推送流程
 
 ## 配置
 
-配置文件：`~/.claude/hooks/notify.json`
+创建配置文件 `~/.claude/hooks/notify.json`，可从模板复制后编辑：
+
+```bash
+# 方式一（marketplace 安装）：从项目仓库获取模板
+curl -sL https://raw.githubusercontent.com/MarioZZJ/cc-notify-hooks/main/config/notify.example.json \
+  -o ~/.claude/hooks/notify.json
+
+# 方式二/三（本地 clone）：直接复制
+cp config/notify.example.json ~/.claude/hooks/notify.json
+```
+
+然后编辑 `~/.claude/hooks/notify.json`，将你需要的渠道设为 `"enabled": true` 并填入凭证：
 
 ```json
 {
