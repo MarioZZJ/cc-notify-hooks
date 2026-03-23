@@ -67,6 +67,28 @@ claude --plugin-dir ./cc-notify-hooks
 - 渠道发送用 `|| true` 包裹，单个失败不影响其他渠道
 - 无配置文件时 macOS 用户自动降级为系统通知
 
+## 开发规范
+
+### 插件开发
+
+- 遵循 Claude Code 插件规范：skill 放 `skills/`，hook 放 `hooks/`，脚本放 `scripts/`
+- 路径引用使用 `${CLAUDE_PLUGIN_ROOT}`（插件根目录）和 `${CLAUDE_PLUGIN_DATA}`（持久数据目录）
+- 插件变更后用 `claude plugin validate .` 验证结构，用 `claude --plugin-dir .` 本地测试
+- 测试 skill 交互时注意 AskUserQuestion 限制：每个问题 2-4 个选项，超出需分组
+
+### 版本与发布
+
+- 版本号遵循语义化版本（MAJOR.MINOR.PATCH）
+- 更新版本号前必须向用户确认目标版本号，不得自行决定
+- `plugin.json` 和 `marketplace.json` 中的版本号必须同步更新
+- 功能变更须同步更新 README 相关章节
+- 发布流程：commit → push → `gh release create vX.Y.Z`
+
+### README 维护
+
+- 新增功能必须更新 README 的对应章节（配置、文件结构等）
+- 用户不一定需要重启 Claude Code，`/reload-plugins` 即可刷新插件
+
 ## 参考文档
 
 - [Claude Code 插件开发指南](https://code.claude.com/docs/en/plugins.md)

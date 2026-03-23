@@ -81,7 +81,7 @@ notify.sh ── 清除旧 pending → 创建新 pending
 /plugin install cc-notify-hooks@cc-notify-hooks
 ```
 
-安装后配置推送渠道（见下方[配置](#配置)章节）。
+安装后运行 `/reload-plugins` 刷新，然后执行 `/cc-notify-hooks:config` 启动交互式配置向导（见下方[配置](#配置)章节）。
 
 ### 方式二：本地插件模式
 
@@ -100,7 +100,7 @@ bash install.sh
 
 安装脚本会交互式引导你选择渠道、输入凭证，自动生成配置并合并 hooks。
 
-**安装后重启 Claude Code 使 hooks 生效。**
+**安装后运行 `/reload-plugins` 刷新插件，即可开始使用。**
 
 ### 验证
 
@@ -113,18 +113,37 @@ bash test_notify.sh hook         # 模拟完整推送流程
 
 ## 配置
 
+### 方式一：交互式配置（推荐）
+
+在 Claude Code 中运行：
+
+```
+/cc-notify-hooks:config
+```
+
+配置向导会引导你：
+1. 选择要启用的**短通知渠道**（macOS、Telegram、Bark 等）
+2. 选择要启用的**长通知渠道**（企业微信、飞书、Slack 等）
+3. 逐个输入渠道凭证，附带获取指引
+4. 调整延迟时间
+5. 测试渠道连通性
+
+已有配置的渠道会标注当前状态，支持随时修改。
+
+### 方式二：手动编辑配置文件
+
 创建配置文件 `~/.claude/hooks/notify.json`，可从模板复制后编辑：
 
 ```bash
-# 方式一（marketplace 安装）：从项目仓库获取模板
+# marketplace 安装：从项目仓库获取模板
 curl -sL https://raw.githubusercontent.com/MarioZZJ/cc-notify-hooks/main/config/notify.example.json \
   -o ~/.claude/hooks/notify.json
 
-# 方式二/三（本地 clone）：直接复制
+# 本地 clone：直接复制
 cp config/notify.example.json ~/.claude/hooks/notify.json
 ```
 
-然后编辑 `~/.claude/hooks/notify.json`，将你需要的渠道设为 `"enabled": true` 并填入凭证：
+然后编辑配置文件，将你需要的渠道设为 `"enabled": true` 并填入凭证：
 
 ```json
 {
@@ -249,6 +268,9 @@ cp config/notify.example.json ~/.claude/hooks/notify.json
 cc-notify-hooks/
 ├── .claude-plugin/
 │   └── plugin.json          # Claude Code 插件清单
+├── skills/
+│   └── config/
+│       └── SKILL.md         # 交互式配置向导（/cc-notify-hooks:config）
 ├── hooks/
 │   └── hooks.json           # Hook 事件定义
 ├── scripts/
