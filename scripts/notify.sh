@@ -20,8 +20,12 @@ CHANNELS_DIR="${SCRIPT_DIR}/channels"
 #  配置加载（JSON）
 # ============================================================
 CONFIG_FILE=""
-if [ -n "${CLAUDE_PLUGIN_DATA:-}" ] && [ -f "${CLAUDE_PLUGIN_DATA}/notify.json" ]; then
+if [ -n "${CC_NOTIFY_CONFIG:-}" ] && [ -f "${CC_NOTIFY_CONFIG}" ]; then
+    CONFIG_FILE="${CC_NOTIFY_CONFIG}"
+elif [ -n "${CLAUDE_PLUGIN_DATA:-}" ] && [ -f "${CLAUDE_PLUGIN_DATA}/notify.json" ]; then
     CONFIG_FILE="${CLAUDE_PLUGIN_DATA}/notify.json"
+elif [ -f "${HOME}/.codex/cc-notify-hooks/notify.json" ]; then
+    CONFIG_FILE="${HOME}/.codex/cc-notify-hooks/notify.json"
 elif [ -f "${HOME}/.claude/hooks/notify.json" ]; then
     CONFIG_FILE="${HOME}/.claude/hooks/notify.json"
 fi
@@ -69,7 +73,7 @@ fi
 
 # 提取字段
 HOOK_EVENT=$(echo "$EVENT_DATA" | jq -r '.hook_event_name // empty' 2>/dev/null || echo "")
-MESSAGE=$(echo "$EVENT_DATA" | jq -r '.message // empty' 2>/dev/null || echo "")
+MESSAGE=$(echo "$EVENT_DATA" | jq -r '.message // .prompt // empty' 2>/dev/null || echo "")
 CWD=$(echo "$EVENT_DATA" | jq -r '.cwd // empty' 2>/dev/null || echo "")
 PROJECT=$(basename "${CWD:-unknown}")
 SESSION_ID=$(echo "$EVENT_DATA" | jq -r '.session_id // empty' 2>/dev/null || echo "unknown")

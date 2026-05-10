@@ -1,0 +1,20 @@
+{
+  "name": "cc-notify-hooks",
+  "interface": {
+    "displayName": "cc-notify-hooks"
+  },
+  "plugins": [
+    {
+      "name": "cc-notify-hooks",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

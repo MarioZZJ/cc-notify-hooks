@@ -5,7 +5,8 @@
 # 用法：
 #   bash test_notify.sh              # 测试所有已启用 channel
 #   bash test_notify.sh bark         # 测试单个 channel
-#   bash test_notify.sh hook         # 模拟完整 hook 流程
+#   bash test_notify.sh hook         # 模拟完整 hook 流程（Claude Code 字段格式）
+#   bash test_notify.sh codex        # 模拟 Codex CLI 的 PermissionRequest 事件（prompt 字段）
 #   bash test_notify.sh list         # 列出已启用 channel
 
 set -euo pipefail
@@ -19,10 +20,14 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# 查找配置文件
+# 查找配置文件（顺序与 scripts/notify.sh 保持一致）
 CONFIG_FILE=""
-if [ -n "${CLAUDE_PLUGIN_DATA:-}" ] && [ -f "${CLAUDE_PLUGIN_DATA}/notify.json" ]; then
+if [ -n "${CC_NOTIFY_CONFIG:-}" ] && [ -f "${CC_NOTIFY_CONFIG}" ]; then
+    CONFIG_FILE="${CC_NOTIFY_CONFIG}"
+elif [ -n "${CLAUDE_PLUGIN_DATA:-}" ] && [ -f "${CLAUDE_PLUGIN_DATA}/notify.json" ]; then
     CONFIG_FILE="${CLAUDE_PLUGIN_DATA}/notify.json"
+elif [ -f "${HOME}/.codex/cc-notify-hooks/notify.json" ]; then
+    CONFIG_FILE="${HOME}/.codex/cc-notify-hooks/notify.json"
 elif [ -f "${HOME}/.claude/hooks/notify.json" ]; then
     CONFIG_FILE="${HOME}/.claude/hooks/notify.json"
 fi
@@ -169,6 +174,27 @@ test_hook_flow() {
     echo "  模拟取消推送: bash ${SCRIPT_DIR}/scripts/clear_pending.sh < /dev/null"
 }
 
+# 模拟 Codex CLI hook 流程
+test_codex_flow() {
+    echo -e "${YELLOW}[模拟 Codex Hook]${NC} 模拟 Codex PermissionRequest 事件..."
+    echo "  字段差异：Codex 用 prompt 字段而非 message，事件名 PermissionRequest"
+    echo ""
+
+    list_channels
+    echo ""
+
+    # Codex stdin 格式：用 prompt 字段而非 message，hook_event_name = PermissionRequest
+    MOCK_JSON='{"hook_event_name":"PermissionRequest","prompt":"Codex 请求执行 Bash 命令","cwd":"'"$PWD"'","session_id":"codex-test-session","model":"gpt-5.5"}'
+
+    echo "$MOCK_JSON" | bash "${SCRIPT_DIR}/scripts/notify.sh" notification
+
+    echo -e "${GREEN}[模拟 Codex Hook]${NC} ✅ 后台推送进程已启动"
+    echo ""
+    echo "  已启用的 channel 将按 delay 顺序依次推送"
+    echo "  模拟取消推送（Codex UserPromptSubmit）："
+    echo "    echo '{\"hook_event_name\":\"UserPromptSubmit\",\"prompt\":\"hello\"}' | bash ${SCRIPT_DIR}/scripts/clear_pending.sh"
+}
+
 # 主逻辑
 case "${1:-all}" in
     list)
@@ -176,6 +202,9 @@ case "${1:-all}" in
         ;;
     hook)
         test_hook_flow
+        ;;
+    codex)
+        test_codex_flow
         ;;
     all)
         for ch_file in "${CHANNELS_DIR}"/*.sh; do

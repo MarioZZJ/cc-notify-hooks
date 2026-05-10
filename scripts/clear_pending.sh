@@ -18,7 +18,7 @@ EVENT_DATA=$(cat 2>/dev/null || echo "")
 if command -v jq &>/dev/null && [ -n "$EVENT_DATA" ]; then
     HOOK_EVENT=$(echo "$EVENT_DATA" | jq -r '.hook_event_name // empty' 2>/dev/null || echo "")
     if [ "$HOOK_EVENT" = "UserPromptSubmit" ]; then
-        MESSAGE=$(echo "$EVENT_DATA" | jq -r '.message // empty' 2>/dev/null || echo "")
+        MESSAGE=$(echo "$EVENT_DATA" | jq -r '.message // .prompt // empty' 2>/dev/null || echo "")
         if [[ "$MESSAGE" =~ ^[[:space:]]*/exit[[:space:]]*$ ]]; then
             touch "${STATE_DIR}/exiting"
         else

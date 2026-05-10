@@ -1,0 +1,23 @@
+{
+  "name": "cc-notify-hooks",
+  "version": "2.2.0",
+  "description": "Tiered push notifications for Codex CLI — macOS, Bark, Telegram, Feishu, DingTalk, Slack, Discord, Pushover, ntfy, Gotify",
+  "author": {
+    "name": "MarioZZJ",
+    "url": "https://github.com/MarioZZJ"
+  },
+  "homepage": "https://github.com/MarioZZJ/cc-notify-hooks",
+  "repository": "https://github.com/MarioZZJ/cc-notify-hooks",
+  "license": "MIT",
+  "keywords": ["notification", "bark", "telegram", "wechat", "feishu", "dingtalk", "slack", "discord", "pushover", "ntfy", "gotify"],
+  "hooks": "./hooks/codex-hooks.json",
+  "interface": {
+    "displayName": "cc-notify-hooks",
+    "shortDescription": "分级推送通知，支持 11 个渠道",
+    "longDescription": "为 Codex CLI 提供分级推送通知。短通知（macOS/Bark/Telegram/Pushover/ntfy/Gotify）秒级触达，长通知（企微/飞书/钉钉/Slack/Discord）分钟级兜底。用户响应后自动取消队列中的推送，不重复打扰。",
+    "developerName": "MarioZZJ",
+    "category": "Productivity",
+    "capabilities": ["Read"],
+    "websiteURL": "https://github.com/MarioZZJ/cc-notify-hooks"
+  }
+}
