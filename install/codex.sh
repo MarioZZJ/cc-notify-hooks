@@ -314,11 +314,11 @@ else
 fi
 
 # ============================================================
-#  检查 codex_hooks 是否启用
+#  检查 hooks 是否启用（兼容 codex_hooks 与 hooks 两种命名）
 # ============================================================
 HOOKS_ENABLED=false
 if [ -f "$CODEX_CONFIG" ]; then
-    if grep -qE '^[[:space:]]*codex_hooks[[:space:]]*=[[:space:]]*true' "$CODEX_CONFIG"; then
+    if grep -qE '^[[:space:]]*(codex_)?hooks[[:space:]]*=[[:space:]]*true' "$CODEX_CONFIG"; then
         HOOKS_ENABLED=true
     fi
 fi
