@@ -171,7 +171,7 @@
     <div class="step active">
       <span class="step-time">0s</span>
       <h3>事件触发</h3>
-      <p>Claude Code 需要权限确认 / 等待输入 / 任务完成</p>
+      <p>Claude Code 或 Codex 需要权限确认 / 等待输入 / 任务完成，通知里会显示实际 Agent 名和项目摘要。</p>
     </div>
     <div class="step active">
       <span class="step-time">3 ~ 15s</span>
@@ -250,6 +250,7 @@
     <pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>[features]
 codex_hooks = true</code></pre>
     <p style="color:var(--text2);font-size:.85rem;margin-top:1rem">在 <code>~/.agents/plugins/marketplace.json</code> 添加插件入口后，Codex 中执行 <code>/plugin install cc-notify-hooks</code>。</p>
+    <p style="color:var(--text2);font-size:.85rem;margin-top:.75rem">Codex hook 会从插件缓存目录定位脚本；不要把 hook command 改成 <code>./scripts/...</code>，它会按当前会话目录解析。</p>
   </div>
   <div class="tab-content" id="tab2">
     <pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>git clone https://github.com/MarioZZJ/cc-notify-hooks.git

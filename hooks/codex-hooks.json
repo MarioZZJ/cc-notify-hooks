@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/notify.sh notification",
+            "command": "bash -lc 'for root in \"$HOME\"/.codex/plugins/cache/*/cc-notify-hooks/latest \"$HOME\"/.codex/plugins/cache/*/cc-notify-hooks/* \"$HOME\"/.codex/cc-notify-hooks; do [ -f \"$root/scripts/notify.sh\" ] && exec bash \"$root/scripts/notify.sh\" notification; done; exit 0'",
             "timeout": 5
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/notify.sh stop",
+            "command": "bash -lc 'for root in \"$HOME\"/.codex/plugins/cache/*/cc-notify-hooks/latest \"$HOME\"/.codex/plugins/cache/*/cc-notify-hooks/* \"$HOME\"/.codex/cc-notify-hooks; do [ -f \"$root/scripts/notify.sh\" ] && exec bash \"$root/scripts/notify.sh\" stop; done; exit 0'",
             "timeout": 5
           }
         ]
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/clear_pending.sh",
+            "command": "bash -lc 'for root in \"$HOME\"/.codex/plugins/cache/*/cc-notify-hooks/latest \"$HOME\"/.codex/plugins/cache/*/cc-notify-hooks/* \"$HOME\"/.codex/cc-notify-hooks; do [ -f \"$root/scripts/clear_pending.sh\" ] && exec bash \"$root/scripts/clear_pending.sh\"; done; exit 0'",
             "timeout": 3
           }
         ]
@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/clear_pending.sh",
+            "command": "bash -lc 'for root in \"$HOME\"/.codex/plugins/cache/*/cc-notify-hooks/latest \"$HOME\"/.codex/plugins/cache/*/cc-notify-hooks/* \"$HOME\"/.codex/cc-notify-hooks; do [ -f \"$root/scripts/clear_pending.sh\" ] && exec bash \"$root/scripts/clear_pending.sh\"; done; exit 0'",
             "timeout": 3
           }
         ]

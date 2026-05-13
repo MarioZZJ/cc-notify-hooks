@@ -91,7 +91,8 @@ claude --plugin-dir ./cc-notify-hooks
 - skill 交互注意 AskUserQuestion 限制：每个问题 2-4 个选项
 
 **Codex CLI**:
-- 清单 `.codex-plugin/plugin.json`，hook 配置 `hooks/codex-hooks.json`（用插件相对路径 `./scripts/...`）
+- 清单 `.codex-plugin/plugin.json`，hook 配置 `hooks/codex-hooks.json`
+- Codex hook 命令以会话 `cwd` 执行，不能用 `./scripts/...`；插件模式需从 `~/.codex/plugins/cache/*/cc-notify-hooks/*/` 定位脚本
 - Marketplace `.agents/plugins/marketplace.json`，policy 必填 installation/authentication/category
 - 启用 hooks 需要 `~/.codex/config.toml` 添加 `[features]\ncodex_hooks = true`
 - 字段差异：Codex `prompt` ↔ Claude `message`（已在脚本里 fallback），Codex 无 Notification 事件（用 PermissionRequest 替代）

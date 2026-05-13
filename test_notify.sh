@@ -8,6 +8,8 @@
 #   bash test_notify.sh hook         # 模拟完整 hook 流程（Claude Code 字段格式）
 #   bash test_notify.sh codex        # 模拟 Codex CLI 的 PermissionRequest 事件（prompt 字段）
 #   bash test_notify.sh list         # 列出已启用 channel
+#   bash test_notify.sh codex-plugin-hooks  # 验证 Codex 插件 hook 不依赖会话 cwd
+#   bash test_notify.sh render        # 验证通知标题和正文模板
 
 set -euo pipefail
 
@@ -37,15 +39,19 @@ echo "  cc-notify-hooks - 连通性测试"
 echo "========================================="
 echo ""
 
-if [ -z "$CONFIG_FILE" ]; then
+COMMAND="${1:-all}"
+
+if [ -z "$CONFIG_FILE" ] && [ "$COMMAND" != "codex-plugin-hooks" ] && [ "$COMMAND" != "render" ]; then
     echo -e "${RED}未找到配置文件${NC}"
     echo "  请先运行 bash install.sh 或复制 config/notify.example.json 到"
     echo "  ~/.claude/hooks/notify.json"
     exit 1
 fi
 
-echo -e "  配置文件: ${CYAN}${CONFIG_FILE}${NC}"
-echo ""
+if [ -n "$CONFIG_FILE" ]; then
+    echo -e "  配置文件: ${CYAN}${CONFIG_FILE}${NC}"
+    echo ""
+fi
 
 # 测试单个 channel
 test_channel() {
@@ -195,8 +201,100 @@ test_codex_flow() {
     echo "    echo '{\"hook_event_name\":\"UserPromptSubmit\",\"prompt\":\"hello\"}' | bash ${SCRIPT_DIR}/scripts/clear_pending.sh"
 }
 
+# 验证 Codex 插件打包 hook 能从任意会话 cwd 找到插件缓存里的脚本
+test_codex_plugin_hooks() {
+    echo -e "${YELLOW}[Codex Plugin Hooks]${NC} 验证插件 hook 命令不依赖当前目录..."
+
+    local tmp_base tmp_home plugin_parent plugin_root stop_cmd clear_cmd
+    tmp_base="${TMPDIR:-/tmp}"
+    tmp_home=$(mktemp -d "${tmp_base%/}/cc-notify-hooks.XXXXXX")
+    plugin_parent="${tmp_home}/.codex/plugins/cache/local/cc-notify-hooks"
+    plugin_root="${plugin_parent}/local"
+    mkdir -p "$plugin_parent"
+    ln -s "$SCRIPT_DIR" "$plugin_root"
+
+    stop_cmd=$(jq -r '.hooks.Stop[0].hooks[0].command' "${SCRIPT_DIR}/hooks/codex-hooks.json")
+    clear_cmd=$(jq -r '.hooks.UserPromptSubmit[0].hooks[0].command' "${SCRIPT_DIR}/hooks/codex-hooks.json")
+
+    (
+        cd "$tmp_base"
+        printf '%s' '{"hook_event_name":"Stop","session_id":"codex-plugin-test","cwd":"'"$tmp_base"'"}' \
+            | HOME="$tmp_home" bash -lc "$stop_cmd"
+        printf '%s' '{"hook_event_name":"UserPromptSubmit","prompt":"hello","cwd":"'"$tmp_base"'"}' \
+            | HOME="$tmp_home" bash -lc "$clear_cmd"
+    )
+
+    if [ ! -f "${tmp_home}/.claude/hooks/state/last_stop" ]; then
+        echo -e "${RED}[Codex Plugin Hooks]${NC} stop hook 没有执行到 notify.sh"
+        rm -rf "$tmp_home"
+        return 1
+    fi
+
+    rm -rf "$tmp_home"
+    echo -e "${GREEN}[Codex Plugin Hooks]${NC} ✅ 插件 hook 可从任意 cwd 执行"
+}
+
+test_render_templates() {
+    echo -e "${YELLOW}[模板渲染]${NC} 验证 Agent 名和 Stop 摘要..."
+
+    local out title body
+    out=$(
+        printf '%s' '{"hook_event_name":"Stop","session_id":"render-codex","cwd":"/tmp/demo-project","model":"gpt-5.5","last_assistant_message":"已完成训练状态检查\n\n后续细节不会进通知。"}' \
+            | CC_NOTIFY_RENDER_ONLY=1 bash "${SCRIPT_DIR}/scripts/notify.sh" stop
+    )
+    title=$(echo "$out" | jq -r '.title')
+    body=$(echo "$out" | jq -r '.body')
+
+    if [ "$title" != "Codex · 任务完成" ]; then
+        echo -e "${RED}[模板渲染]${NC} Codex Stop 标题错误: $title"
+        return 1
+    fi
+    if [[ "$body" != "[demo-project] 已完成训练状态检查"* ]]; then
+        echo -e "${RED}[模板渲染]${NC} Codex Stop 正文错误: $body"
+        return 1
+    fi
+    if [[ "$body" == *"Claude 已完成工作"* ]]; then
+        echo -e "${RED}[模板渲染]${NC} Codex Stop 仍包含旧文案: $body"
+        return 1
+    fi
+
+    out=$(
+        printf '%s' '{"hook_event_name":"Stop","session_id":"render-claude-stop","transcript_path":"/Users/test/.claude/projects/demo/session.jsonl","cwd":"/tmp/demo-project","model":"claude-sonnet-4-5","last_assistant_message":"Claude 侧任务也完成了。"}' \
+            | CC_NOTIFY_RENDER_ONLY=1 bash "${SCRIPT_DIR}/scripts/notify.sh" stop
+    )
+    title=$(echo "$out" | jq -r '.title')
+    body=$(echo "$out" | jq -r '.body')
+
+    if [ "$title" != "Claude Code · 任务完成" ]; then
+        echo -e "${RED}[模板渲染]${NC} Claude Stop 标题错误: $title"
+        return 1
+    fi
+    if [[ "$body" != "[demo-project] Claude 侧任务也完成了。"* ]]; then
+        echo -e "${RED}[模板渲染]${NC} Claude Stop 正文错误: $body"
+        return 1
+    fi
+
+    out=$(
+        printf '%s' '{"hook_event_name":"Notification","notification_type":"idle_prompt","session_id":"render-claude","cwd":"/tmp/demo-project","model":"claude-sonnet-4-5","message":"Claude is waiting for your response"}' \
+            | CC_NOTIFY_RENDER_ONLY=1 bash "${SCRIPT_DIR}/scripts/notify.sh" notification
+    )
+    title=$(echo "$out" | jq -r '.title')
+    body=$(echo "$out" | jq -r '.body')
+
+    if [ "$title" != "Claude Code · 等待响应" ]; then
+        echo -e "${RED}[模板渲染]${NC} Claude Notification 标题错误: $title"
+        return 1
+    fi
+    if [[ "$body" != "[demo-project] Claude is waiting for your response"* ]]; then
+        echo -e "${RED}[模板渲染]${NC} Claude Notification 正文错误: $body"
+        return 1
+    fi
+
+    echo -e "${GREEN}[模板渲染]${NC} ✅ 标题和正文模板符合预期"
+}
+
 # 主逻辑
-case "${1:-all}" in
+case "$COMMAND" in
     list)
         list_channels
         ;;
@@ -205,6 +303,12 @@ case "${1:-all}" in
         ;;
     codex)
         test_codex_flow
+        ;;
+    codex-plugin-hooks)
+        test_codex_plugin_hooks
+        ;;
+    render)
+        test_render_templates
         ;;
     all)
         for ch_file in "${CHANNELS_DIR}"/*.sh; do

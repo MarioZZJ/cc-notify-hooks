@@ -105,6 +105,8 @@ codex_hooks = true
 
 之后在 Codex 中 `/plugin` 安装即可。
 
+注意：Codex 的 hook 命令运行目录是当前会话 `cwd`，不是插件根目录。`.codex-plugin/plugin.json` 只负责把 `hooks/codex-hooks.json` 作为生命周期配置打包进去；hook 命令不能写成 `./scripts/...`，否则在普通项目里会找不到脚本并报 `No such file or directory`。本插件的 Codex hook 会从 `~/.codex/plugins/cache/*/cc-notify-hooks/*/` 自动定位安装副本。
+
 ### 方式三：本地插件模式
 
 ```bash
@@ -141,6 +143,8 @@ bash test_notify.sh bark         # 测试单个渠道
 bash test_notify.sh list         # 查看已启用渠道及延迟
 bash test_notify.sh hook         # 模拟 Claude Code hook 流程
 bash test_notify.sh codex        # 模拟 Codex CLI PermissionRequest 事件
+bash test_notify.sh codex-plugin-hooks  # 验证 Codex 插件 hook 路径解析
+bash test_notify.sh render       # 验证通知内容模板
 ```
 
 ## 配置
@@ -297,6 +301,18 @@ cp config/notify.example.json ~/.claude/hooks/notify.json
 | PreToolUse | 工具调用前 | 清除 pending |
 
 > Codex 没有 `Notification` 事件，使用 `PermissionRequest` 作为对应——只在真的需要授权时触发，不会被空闲提示干扰。
+
+## 通知内容
+
+通知标题使用实际 Agent 名，不再写死为 Claude：
+
+| 场景 | 标题 | 正文 |
+|------|------|------|
+| Claude Code Notification idle_prompt | `Claude Code · 等待响应` | `[项目名] 通知消息` |
+| Codex PermissionRequest | `Codex · 需要确认` | `[项目名] 权限提示` |
+| Stop | `{Agent} · 任务完成` | `[项目名] last_assistant_message 首个非空行` |
+
+模板只依赖两边共同字段：`cwd`、`hook_event_name`、`model`、`message/prompt`、`last_assistant_message`。`permission_mode`、`notification_type`、`tool_name` 等字段只作为可选补充，不作为跨平台核心依赖。
 
 ## 过滤规则
 

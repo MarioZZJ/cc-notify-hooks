@@ -49,7 +49,9 @@ fi
 
 # 状态目录
 STATE_DIR="${HOME}/.claude/hooks/state"
-mkdir -p "$STATE_DIR"
+if [ "${CC_NOTIFY_RENDER_ONLY:-}" != "1" ]; then
+    mkdir -p "$STATE_DIR"
+fi
 
 # ============================================================
 #  读取 hook 事件数据
@@ -59,11 +61,13 @@ EVENT_TYPE="${1:-unknown}"
 
 # 调试日志
 DEBUG_LOG="/tmp/claude-hooks-debug.log"
-{
-    echo "[$(date)] EVENT_TYPE=$EVENT_TYPE"
-    echo "$EVENT_DATA"
-    echo "---"
-} >> "$DEBUG_LOG"
+if [ "${CC_NOTIFY_RENDER_ONLY:-}" != "1" ]; then
+    {
+        echo "[$(date)] EVENT_TYPE=$EVENT_TYPE"
+        echo "$EVENT_DATA"
+        echo "---"
+    } >> "$DEBUG_LOG"
+fi
 
 # 依赖检查
 if ! command -v jq &>/dev/null; then
@@ -77,69 +81,110 @@ MESSAGE=$(echo "$EVENT_DATA" | jq -r '.message // .prompt // empty' 2>/dev/null 
 CWD=$(echo "$EVENT_DATA" | jq -r '.cwd // empty' 2>/dev/null || echo "")
 PROJECT=$(basename "${CWD:-unknown}")
 SESSION_ID=$(echo "$EVENT_DATA" | jq -r '.session_id // empty' 2>/dev/null || echo "unknown")
+TRANSCRIPT_PATH=$(echo "$EVENT_DATA" | jq -r '.transcript_path // empty' 2>/dev/null || echo "")
 PERM_MODE=$(echo "$EVENT_DATA" | jq -r '.permission_mode // empty' 2>/dev/null || echo "")
 AGENT_ID=$(echo "$EVENT_DATA" | jq -r '.agent_id // empty' 2>/dev/null || echo "")
 NOTIF_TYPE=$(echo "$EVENT_DATA" | jq -r '.notification_type // empty' 2>/dev/null || echo "")
+MODEL=$(echo "$EVENT_DATA" | jq -r '.model // empty' 2>/dev/null || echo "")
+TOOL_NAME=$(echo "$EVENT_DATA" | jq -r '.tool_name // empty' 2>/dev/null || echo "")
+LAST_ASSISTANT_MESSAGE=$(echo "$EVENT_DATA" | jq -r '.last_assistant_message // empty' 2>/dev/null || echo "")
 
-# ============================================================
-#  过滤规则
-# ============================================================
-
-# 子智能体：跳过
-[ -n "$AGENT_ID" ] && exit 0
-
-# Stop hook 循环保护
-STOP_ACTIVE=$(echo "$EVENT_DATA" | jq -r '.stop_hook_active // false' 2>/dev/null || echo "false")
-if [ "$EVENT_TYPE" = "stop" ] && [ "$STOP_ACTIVE" = "true" ]; then
-    exit 0
-fi
-
-# /exit 后的 Stop 事件：跳过
-if [ "$EVENT_TYPE" = "stop" ] && [ -f "${STATE_DIR}/exiting" ]; then
-    rm -f "${STATE_DIR}/exiting"
-    exit 0
-fi
-
-# 防重复：同类事件在 RATE_LIMIT 秒内只推一次
-RATE_FILE="${STATE_DIR}/last_${EVENT_TYPE}"
 NOW=$(date +%s)
-if [ -f "$RATE_FILE" ]; then
-    LAST=$(cat "$RATE_FILE" 2>/dev/null || echo "0")
-    if [ $((NOW - LAST)) -lt "$RATE_LIMIT" ]; then
+
+if [ "${CC_NOTIFY_RENDER_ONLY:-}" != "1" ]; then
+    # ============================================================
+    #  过滤规则
+    # ============================================================
+
+    # 子智能体：跳过
+    [ -n "$AGENT_ID" ] && exit 0
+
+    # Stop hook 循环保护
+    STOP_ACTIVE=$(echo "$EVENT_DATA" | jq -r '.stop_hook_active // false' 2>/dev/null || echo "false")
+    if [ "$EVENT_TYPE" = "stop" ] && [ "$STOP_ACTIVE" = "true" ]; then
         exit 0
     fi
+
+    # /exit 后的 Stop 事件：跳过
+    if [ "$EVENT_TYPE" = "stop" ] && [ -f "${STATE_DIR}/exiting" ]; then
+        rm -f "${STATE_DIR}/exiting"
+        exit 0
+    fi
+
+    # 防重复：同类事件在 RATE_LIMIT 秒内只推一次
+    RATE_FILE="${STATE_DIR}/last_${EVENT_TYPE}"
+    if [ -f "$RATE_FILE" ]; then
+        LAST=$(cat "$RATE_FILE" 2>/dev/null || echo "0")
+        if [ $((NOW - LAST)) -lt "$RATE_LIMIT" ]; then
+            exit 0
+        fi
+    fi
+    echo "$NOW" > "$RATE_FILE"
 fi
-echo "$NOW" > "$RATE_FILE"
 
 # ============================================================
 #  构造通知内容
 # ============================================================
+if [ "$HOOK_EVENT" = "Notification" ]; then
+    AGENT_NAME="Claude Code"
+elif [[ "${TRANSCRIPT_PATH:-}" == *".claude"* ]]; then
+    AGENT_NAME="Claude Code"
+else
+    AGENT_NAME="Codex"
+fi
+
+first_line() {
+    printf '%s' "$1" | awk 'NF {print; exit}'
+}
+
+SUMMARY=""
+DETAIL=""
+
 case "$EVENT_TYPE" in
     notification)
         case "$NOTIF_TYPE" in
             idle_prompt)
-                TITLE="等待响应"
-                BODY="${MESSAGE:-Claude 在等你}"
+                TITLE="${AGENT_NAME} · 等待响应"
+                SUMMARY="${MESSAGE:-等待你的响应}"
                 ;;
             *)
-                TITLE="需要你的注意"
-                BODY="${MESSAGE:-Claude 需要你的操作}"
+                TITLE="${AGENT_NAME} · 需要确认"
+                SUMMARY="${MESSAGE:-需要你的操作}"
                 ;;
         esac
+        [ -n "$TOOL_NAME" ] && DETAIL="工具: $TOOL_NAME"
         ;;
     stop)
-        TITLE="任务完成"
-        BODY="${MESSAGE:-Claude 已完成工作}"
+        TITLE="${AGENT_NAME} · 任务完成"
+        SUMMARY=$(first_line "$LAST_ASSISTANT_MESSAGE")
+        SUMMARY="${SUMMARY:-任务已完成}"
         ;;
     *)
-        TITLE="Claude Code"
-        BODY="${MESSAGE:-有新事件}"
+        TITLE="${AGENT_NAME} · 新事件"
+        SUMMARY="${MESSAGE:-${HOOK_EVENT:-有新事件}}"
         ;;
 esac
 
 PREFIX="[$PROJECT]"
 [ -n "$PERM_MODE" ] && PREFIX="[$PROJECT|$PERM_MODE]"
-BODY="$PREFIX $BODY"
+BODY="$PREFIX $SUMMARY"
+if [ -n "$DETAIL" ]; then
+    BODY="${BODY}
+${DETAIL}"
+elif [ -n "$MODEL" ]; then
+    BODY="${BODY}
+模型: ${MODEL}"
+fi
+
+if [ "${CC_NOTIFY_RENDER_ONLY:-}" = "1" ]; then
+    jq -n \
+        --arg title "$TITLE" \
+        --arg body "$BODY" \
+        --arg agent "$AGENT_NAME" \
+        --arg project "$PROJECT" \
+        '{title: $title, body: $body, agent: $agent, project: $project}'
+    exit 0
+fi
 
 # ============================================================
 #  创建 pending 标记
