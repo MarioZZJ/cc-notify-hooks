@@ -12,7 +12,7 @@
       "name": "cc-notify-hooks",
       "source": "./plugins/cc-notify-hooks",
       "description": "Tiered push notifications for Claude Code — macOS, Bark, Telegram, Feishu, DingTalk, Slack, Discord, Pushover, ntfy, Gotify",
-      "version": "2.2.2",
+      "version": "2.3.0",
       "author": {
         "name": "MarioZZJ"
       },

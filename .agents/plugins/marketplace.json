@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "cc-notify-hooks",
-      "version": "2.2.2",
+      "version": "2.3.0",
       "source": {
         "source": "local",
         "path": "./plugins/cc-notify-hooks"

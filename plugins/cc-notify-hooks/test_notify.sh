@@ -235,17 +235,20 @@ test_codex_plugin_hooks() {
 }
 
 test_render_templates() {
-    echo -e "${YELLOW}[模板渲染]${NC} 验证 Agent 名和 Stop 摘要..."
+    echo -e "${YELLOW}[模板渲染]${NC} 验证短通知和结构化长通知字段..."
 
-    local out title body
+    local out title body summary event_name tool_name status_label
     out=$(
         printf '%s' '{"hook_event_name":"Stop","session_id":"render-codex","cwd":"/tmp/demo-project","model":"gpt-5.5","last_assistant_message":"已完成训练状态检查\n\n后续细节不会进通知。"}' \
             | CC_NOTIFY_RENDER_ONLY=1 bash "${SCRIPT_DIR}/scripts/notify.sh" stop
     )
     title=$(echo "$out" | jq -r '.title')
     body=$(echo "$out" | jq -r '.body')
+    summary=$(echo "$out" | jq -r '.summary_short')
+    event_name=$(echo "$out" | jq -r '.event_name')
+    tool_name=$(echo "$out" | jq -r '.tool_name')
 
-    if [ "$title" != "Codex · 任务完成" ]; then
+    if [ "$title" != "Codex · 任务完成 ✅" ]; then
         echo -e "${RED}[模板渲染]${NC} Codex Stop 标题错误: $title"
         return 1
     fi
@@ -253,8 +256,16 @@ test_render_templates() {
         echo -e "${RED}[模板渲染]${NC} Codex Stop 正文错误: $body"
         return 1
     fi
+    if [ "$summary" != "已完成训练状态检查" ] || [ "$event_name" != "Stop" ] || [ -n "$tool_name" ]; then
+        echo -e "${RED}[模板渲染]${NC} Codex Stop 结构化字段错误: $out"
+        return 1
+    fi
     if [[ "$body" == *"Claude 已完成工作"* ]]; then
         echo -e "${RED}[模板渲染]${NC} Codex Stop 仍包含旧文案: $body"
+        return 1
+    fi
+    if [[ "$body" == *"gpt-5.5"* ]] || [[ "$body" == *"on-request"* ]]; then
+        echo -e "${RED}[模板渲染]${NC} 短通知正文不应包含模型或权限: $body"
         return 1
     fi
 
@@ -265,7 +276,7 @@ test_render_templates() {
     title=$(echo "$out" | jq -r '.title')
     body=$(echo "$out" | jq -r '.body')
 
-    if [ "$title" != "Claude Code · 任务完成" ]; then
+    if [ "$title" != "Claude Code · 任务完成 ✅" ]; then
         echo -e "${RED}[模板渲染]${NC} Claude Stop 标题错误: $title"
         return 1
     fi
@@ -280,9 +291,14 @@ test_render_templates() {
     )
     title=$(echo "$out" | jq -r '.title')
     body=$(echo "$out" | jq -r '.body')
+    status_label=$(echo "$out" | jq -r '.status_label')
 
-    if [ "$title" != "Claude Code · 等待响应" ]; then
+    if [ "$title" != "Claude Code · 等待响应 ⏳" ]; then
         echo -e "${RED}[模板渲染]${NC} Claude Notification 标题错误: $title"
+        return 1
+    fi
+    if [ "$status_label" != "等待响应 ⏳" ]; then
+        echo -e "${RED}[模板渲染]${NC} Claude Notification 状态错误: $status_label"
         return 1
     fi
     if [[ "$body" != "[demo-project] Claude is waiting for your response"* ]]; then
@@ -290,7 +306,50 @@ test_render_templates() {
         return 1
     fi
 
-    echo -e "${GREEN}[模板渲染]${NC} ✅ 标题和正文模板符合预期"
+    out=$(
+        printf '%s' '{"hook_event_name":"PermissionRequest","session_id":"render-codex-perm","cwd":"/tmp/demo-project","model":"gpt-5.5","permission_mode":"on-request","tool_name":"Bash","prompt":"请求执行 Bash 命令：git push origin main\n\n该操作会推送远端分支。"}' \
+            | CC_NOTIFY_RENDER_ONLY=1 bash "${SCRIPT_DIR}/scripts/notify.sh" notification
+    )
+    title=$(echo "$out" | jq -r '.title')
+    body=$(echo "$out" | jq -r '.body')
+    summary=$(echo "$out" | jq -r '.summary_short')
+    tool_name=$(echo "$out" | jq -r '.tool_name')
+
+    if [ "$title" != "Codex · 需要确认 🔔" ]; then
+        echo -e "${RED}[模板渲染]${NC} Codex Permission 标题错误: $title"
+        return 1
+    fi
+    if [ "$summary" != "请求执行 Bash 命令：git push origin main" ] || [ "$tool_name" != "Bash" ]; then
+        echo -e "${RED}[模板渲染]${NC} Codex Permission 摘要或工具错误: $out"
+        return 1
+    fi
+    if [[ "$body" != "[demo-project] 请求执行 Bash 命令：git push origin main · Bash" ]]; then
+        echo -e "${RED}[模板渲染]${NC} Codex Permission 短正文错误: $body"
+        return 1
+    fi
+    if [[ "$body" == *"on-request"* ]]; then
+        echo -e "${RED}[模板渲染]${NC} Permission mode 不应进入短正文: $body"
+        return 1
+    fi
+
+    local markdown
+    source "${SCRIPT_DIR}/scripts/lib/notify_format.sh"
+    markdown=$(notify_long_markdown "$out")
+    if [[ "$markdown" != *"请求执行 Bash 命令：git push origin main"* ]] ||
+       [[ "$markdown" != *"**项目**: demo-project"* ]] ||
+       [[ "$markdown" != *"**事件**: PermissionRequest"* ]] ||
+       [[ "$markdown" != *"**工具**: Bash"* ]] ||
+       [[ "$markdown" != *"**Session**: render-c"* ]] ||
+       [[ "$markdown" != *"gpt-5.5 · /tmp/demo-project"* ]]; then
+        echo -e "${RED}[模板渲染]${NC} 长通知 Markdown 错误: $markdown"
+        return 1
+    fi
+    if [[ "$markdown" == *"on-request"* ]] || [[ "$markdown" == *"cc-notify-hooks ·"* ]]; then
+        echo -e "${RED}[模板渲染]${NC} 长通知不应包含权限或旧 note: $markdown"
+        return 1
+    fi
+
+    echo -e "${GREEN}[模板渲染]${NC} ✅ 短通知和长通知字段符合预期"
 }
 
 # 主逻辑

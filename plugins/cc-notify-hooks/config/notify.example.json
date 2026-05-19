@@ -39,26 +39,31 @@
     "wechat": {
       "enabled": false,
       "delay": 300,
+      "format": "markdown",
       "webhook": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your-key"
     },
     "feishu": {
       "enabled": false,
       "delay": 300,
+      "format": "card",
       "webhook": "https://open.feishu.cn/open-apis/bot/v2/hook/your-token"
     },
     "dingtalk": {
       "enabled": false,
       "delay": 300,
+      "format": "markdown",
       "webhook": "https://oapi.dingtalk.com/robot/send?access_token=your-token"
     },
     "slack": {
       "enabled": false,
       "delay": 300,
+      "format": "markdown",
       "webhook": "https://hooks.slack.com/services/T.../B.../xxx"
     },
     "discord": {
       "enabled": false,
       "delay": 300,
+      "format": "embed",
       "webhook": "https://discord.com/api/webhooks/id/token"
     }
   },

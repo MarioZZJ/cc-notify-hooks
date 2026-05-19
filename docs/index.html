@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>cc-notify-hooks — AI Agent 时代的注意力调度器</title>
-<meta name="description" content="Claude Code 与 Codex CLI 分级推送通知插件。11 个渠道，短通知即时触达，长通知异步兜底。人可以闲着，Agent 不可以。">
+<meta name="description" content="Claude Code 与 Codex CLI 分级推送通知插件。11 个渠道，短通知即时触达，长通知卡片化兜底。人可以闲着，Agent 不可以。">
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -33,6 +33,19 @@
 
   .scroll-hint{position:absolute;bottom:2rem;animation:bounce 2s infinite}
   @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+
+  /* Demo notification */
+  .demo-notice{position:fixed;top:20px;right:20px;width:min(360px,calc(100vw - 32px));background:rgba(246,246,248,.88);color:#17171d;border:1px solid rgba(255,255,255,.52);border-radius:14px;box-shadow:0 18px 55px rgba(0,0,0,.34);backdrop-filter:blur(24px) saturate(1.4);z-index:50;padding:.85rem .9rem .9rem;display:grid;grid-template-columns:40px 1fr 24px;gap:.75rem;align-items:start;opacity:0;transform:translateY(-18px) scale(.98);pointer-events:none;transition:opacity .28s ease,transform .28s ease}
+  .demo-notice.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+  .demo-icon{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--green));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:1.05rem}
+  .demo-main{min-width:0}
+  .demo-top{display:flex;align-items:center;gap:.45rem;margin-bottom:.15rem}
+  .demo-app{font-size:.78rem;font-weight:700;color:#2b2b31}
+  .demo-time{font-size:.72rem;color:#6d6a73}
+  .demo-title{font-size:.92rem;font-weight:760;line-height:1.25;margin-bottom:.15rem}
+  .demo-body{font-size:.82rem;line-height:1.35;color:#3e3b43}
+  .demo-close{border:0;background:rgba(0,0,0,.07);color:#4b4850;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center}
+  .demo-close:hover{background:rgba(0,0,0,.13)}
 
   /* Sections */
   section{padding:5rem 1.5rem;max-width:1100px;margin:0 auto}
@@ -95,6 +108,14 @@
   .feat h3{font-size:.95rem;margin-bottom:.4rem;display:flex;align-items:center;gap:.5rem}
   .feat p{color:var(--text2);font-size:.85rem}
 
+  .template-preview{background:var(--surface);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:1.5rem;margin-top:1.5rem}
+  .template-preview h3{font-size:1rem;margin-bottom:.75rem}
+  .template-preview p{color:var(--text2);font-size:.9rem;margin-bottom:1rem}
+  .template-card{background:var(--surface2);border-left:4px solid var(--orange);border-radius:8px;padding:1rem;font-size:.9rem}
+  .template-card strong{display:block;margin-bottom:.4rem}
+  .template-card dl{display:grid;grid-template-columns:72px 1fr;gap:.35rem .75rem;color:var(--text2);font-size:.84rem}
+  .template-card dt{color:var(--text);font-weight:600}
+
   /* Footer */
   footer{text-align:center;padding:3rem 1.5rem;color:var(--text2);font-size:.8rem;border-top:1px solid rgba(255,255,255,.05)}
   footer a{color:var(--accent2);text-decoration:none}
@@ -112,11 +133,24 @@
 </head>
 <body>
 
+<div class="demo-notice" id="demoNotice" role="status" aria-live="polite">
+  <div class="demo-icon">cc</div>
+  <div class="demo-main">
+    <div class="demo-top">
+      <span class="demo-app">cc-notify-hooks</span>
+      <span class="demo-time">now</span>
+    </div>
+    <div class="demo-title">Codex · 需要确认 🔔</div>
+    <div class="demo-body">[cc-notify-hooks] 请求执行 git push origin main · Bash</div>
+  </div>
+  <button class="demo-close" type="button" aria-label="关闭通知" onclick="hideDemoNotice()">×</button>
+</div>
+
 <!-- Hero -->
 <header class="hero">
-  <span class="badge">Claude Code &amp; Codex CLI Plugin</span>
+  <span class="badge">v2.3.0 · Claude Code &amp; Codex CLI Plugin</span>
   <h1>人可以闲着<br><em>Agent 不可以</em></h1>
-  <p class="subtitle">cc-notify-hooks — Agent 时代的注意力调度器。11 个渠道分级推送，让你的 Claude Code 与 Codex CLI 永不空转等待。</p>
+  <p class="subtitle">cc-notify-hooks — Agent 时代的注意力调度器。短通知即时打断，长通知卡片化兜底，让 Claude Code 与 Codex CLI 不再空转等待。</p>
   <div class="hero-cta">
     <a href="#install" class="btn btn-primary">立即安装</a>
     <a href="https://github.com/MarioZZJ/cc-notify-hooks" class="btn btn-outline">GitHub</a>
@@ -153,6 +187,28 @@
   </div>
 </section>
 
+<!-- Message Template -->
+<section>
+  <div class="section-label">模板</div>
+  <h2>短通知负责打断，长通知负责定位</h2>
+  <p>v2.3.0 起通知会先归一成同一批字段。短渠道只显示项目和一句摘要，长渠道第一行也放摘要，再补项目、事件、工具和 Session。</p>
+
+  <div class="template-preview">
+    <h3>长通知卡片示例</h3>
+    <p>飞书使用消息卡片，企业微信 / 钉钉 / Slack / Discord 使用近似模板。</p>
+    <div class="template-card">
+      <strong>请求执行 Bash 命令：git push origin main</strong>
+      <dl>
+        <dt>项目</dt><dd>cc-notify-hooks</dd>
+        <dt>事件</dt><dd>PermissionRequest</dd>
+        <dt>工具</dt><dd>Bash</dd>
+        <dt>Session</dt><dd>019eabcd</dd>
+      </dl>
+      <p style="margin-top:.8rem;color:var(--text2);font-size:.78rem">GPT-5 · /Users/mariozzj/Documents/project/cc-notify-hooks · Mario5Air</p>
+    </div>
+  </div>
+</section>
+
 <!-- Manifesto -->
 <section>
   <div class="manifesto">
@@ -171,12 +227,12 @@
     <div class="step active">
       <span class="step-time">0s</span>
       <h3>事件触发</h3>
-      <p>Claude Code 或 Codex 需要权限确认 / 等待输入 / 任务完成，通知里会显示实际 Agent 名和项目摘要。</p>
+      <p>Claude Code 或 Codex 需要权限确认 / 等待输入 / 任务完成，通知会先归一成项目、事件、工具、Session 和摘要。</p>
     </div>
     <div class="step active">
       <span class="step-time">3 ~ 15s</span>
       <h3>短通知 — 即时触达</h3>
-      <p>macOS 系统弹窗、Telegram 消息、Bark / Pushover / ntfy 手机推送。你可能只是切了个窗口，几秒钟就能看到。</p>
+      <p>macOS 系统弹窗、Telegram 消息、Bark / Pushover / ntfy 手机推送。只显示 Agent、状态、项目和一句短摘要，不塞权限细节。</p>
     </div>
     <div class="step">
       <div class="step-cancel">
@@ -186,7 +242,7 @@
     <div class="step active">
       <span class="step-time long">5 min</span>
       <h3>长通知 — 异步兜底</h3>
-      <p>企业微信 / 飞书 / 钉钉 / Slack / Discord 群消息。你可能在开会、在通勤，但最终能从工作沟通工具看到任务状态。</p>
+      <p>企业微信 / 飞书 / 钉钉 / Slack / Discord 群消息。飞书使用消息卡片，其余渠道用近似 Markdown / embed 模板，第一行就是短摘要。</p>
     </div>
     <div class="step">
       <div class="step-cancel">
@@ -217,11 +273,11 @@
   <div class="channel-group">
     <h3><span class="long-dot"></span> 长通知渠道（异步兜底）</h3>
     <div class="channel-grid">
-      <div class="channel">企业微信<small>5min Webhook</small></div>
-      <div class="channel">飞书<small>5min Webhook</small></div>
-      <div class="channel">钉钉<small>5min Webhook</small></div>
-      <div class="channel">Slack<small>5min Webhook</small></div>
-      <div class="channel">Discord<small>5min Webhook</small></div>
+      <div class="channel">企业微信<small>5min Markdown</small></div>
+      <div class="channel">飞书<small>5min 消息卡片</small></div>
+      <div class="channel">钉钉<small>5min Markdown</small></div>
+      <div class="channel">Slack<small>5min Blocks</small></div>
+      <div class="channel">Discord<small>5min Embed</small></div>
     </div>
   </div>
 </section>
@@ -245,7 +301,7 @@
   </div>
   <div class="tab-content" id="tab1">
     <p style="color:var(--text2);font-size:.9rem;margin-bottom:1rem">添加 marketplace 并安装插件：</p>
-    <pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>codex plugin marketplace add MarioZZJ/cc-notify-hooks --ref v2.2.2
+    <pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>codex plugin marketplace add MarioZZJ/cc-notify-hooks --ref v2.3.0
 codex plugin add cc-notify-hooks@cc-notify-hooks</code></pre>
     <p style="color:var(--text2);font-size:.85rem;margin-top:1rem">在 <code>~/.codex/config.toml</code> 启用 hooks（必需）：</p>
     <pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>[features]
@@ -319,6 +375,10 @@ function copyCode(btn){
   const code=btn.parentElement.querySelector('code').textContent;
   navigator.clipboard.writeText(code).then(()=>{btn.textContent='已复制';setTimeout(()=>btn.textContent='复制',1500)});
 }
+function hideDemoNotice(){
+  document.getElementById('demoNotice')?.classList.remove('show');
+}
+window.setTimeout(()=>{document.getElementById('demoNotice')?.classList.add('show')},5000);
 </script>
 </body>
 </html>

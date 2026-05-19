@@ -88,7 +88,7 @@ notify.sh ── 清除旧 pending → 创建新 pending
 仓库根目录的 `.agents/plugins/marketplace.json` 是 Codex marketplace，实际插件目录是 `plugins/cc-notify-hooks/`。在终端执行：
 
 ```bash
-codex plugin marketplace add MarioZZJ/cc-notify-hooks --ref v2.2.2
+codex plugin marketplace add MarioZZJ/cc-notify-hooks --ref v2.3.0
 codex plugin add cc-notify-hooks@cc-notify-hooks
 ```
 
@@ -197,6 +197,7 @@ cp config/notify.example.json ~/.claude/hooks/notify.json
 | `enabled` | 是否启用该渠道 |
 | `delay` | 推送延迟（秒），可自由调整 |
 | `events` | 可选，响应的事件类型，默认 `["notification", "stop"]` |
+| `format` | 可选，长通知渠道的展示格式。飞书默认 `card`，企业微信/钉钉/Slack 默认 `markdown`，Discord 默认 `embed` |
 | 其他字段 | 各渠道的凭证（key、webhook、token 等） |
 
 ### 各渠道凭证
@@ -300,15 +301,37 @@ cp config/notify.example.json ~/.claude/hooks/notify.json
 
 ## 通知内容
 
-通知标题使用实际 Agent 名，不再写死为 Claude：
+通知先归一为统一字段，再按短通知和长通知分别渲染。标题使用实际 Agent 名，不再写死为 Claude。
 
-| 场景 | 标题 | 正文 |
-|------|------|------|
-| Claude Code Notification idle_prompt | `Claude Code · 等待响应` | `[项目名] 通知消息` |
-| Codex PermissionRequest | `Codex · 需要确认` | `[项目名] 权限提示` |
-| Stop | `{Agent} · 任务完成` | `[项目名] last_assistant_message 首个非空行` |
+| 场景 | 标题 |
+|------|------|
+| Claude Code Notification idle_prompt | `Claude Code · 等待响应 ⏳` |
+| Codex PermissionRequest | `Codex · 需要确认 🔔` |
+| Stop | `{Agent} · 任务完成 ✅` |
+| 异常 / 未知事件 | `{Agent} · 异常 ⚠️` |
 
-模板只依赖两边共同字段：`cwd`、`hook_event_name`、`model`、`message/prompt`、`last_assistant_message`。`permission_mode`、`notification_type`、`tool_name` 等字段只作为可选补充，不作为跨平台核心依赖。
+短通知正文只保留打断所需信息：
+
+```text
+[项目名] summary_short · tool_name
+```
+
+其中 `tool_name` 是条件字段，没有就不显示；`permission_mode` 不进入通知正文。
+
+长通知正文第一行显示 `summary_short`，随后显示定位字段：
+
+```text
+summary_short
+
+项目: project
+事件: hook_event_name
+工具: tool_name      # 有值才显示
+Session: session_short
+
+model · cwd · hostname
+```
+
+飞书默认发送消息卡片；企业微信、钉钉、Slack 使用近似 Markdown 模板；Discord 使用 embed。`summary_short` 来自 `message/prompt` 或 `last_assistant_message` 的首个非空行，最长保留 120 字。
 
 ## 过滤规则
 
