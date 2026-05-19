@@ -6,10 +6,10 @@
   "plugins": [
     {
       "name": "cc-notify-hooks",
-      "version": "2.2.1",
+      "version": "2.2.2",
       "source": {
         "source": "local",
-        "path": "./"
+        "path": "./plugins/cc-notify-hooks"
       },
       "policy": {
         "installation": "AVAILABLE",

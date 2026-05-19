@@ -244,12 +244,13 @@
     <p style="color:var(--text2);font-size:.85rem;margin-top:1rem">安装后运行 <code>/cc-notify-hooks:config</code> 启动交互式配置向导。</p>
   </div>
   <div class="tab-content" id="tab1">
-    <p style="color:var(--text2);font-size:.9rem;margin-bottom:1rem">克隆到本地 plugins 目录：</p>
-    <pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>git clone https://github.com/MarioZZJ/cc-notify-hooks.git ~/plugins/cc-notify-hooks</code></pre>
+    <p style="color:var(--text2);font-size:.9rem;margin-bottom:1rem">添加 marketplace 并安装插件：</p>
+    <pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>codex plugin marketplace add MarioZZJ/cc-notify-hooks --ref v2.2.2
+codex plugin add cc-notify-hooks@cc-notify-hooks</code></pre>
     <p style="color:var(--text2);font-size:.85rem;margin-top:1rem">在 <code>~/.codex/config.toml</code> 启用 hooks（必需）：</p>
     <pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>[features]
 codex_hooks = true</code></pre>
-    <p style="color:var(--text2);font-size:.85rem;margin-top:1rem">在 <code>~/.agents/plugins/marketplace.json</code> 添加插件入口后，Codex 中执行 <code>/plugin install cc-notify-hooks</code>。</p>
+    <p style="color:var(--text2);font-size:.85rem;margin-top:1rem">Marketplace 位于仓库根目录，实际插件目录是 <code>plugins/cc-notify-hooks/</code>。</p>
     <p style="color:var(--text2);font-size:.85rem;margin-top:.75rem">Codex hook 会从插件缓存目录定位脚本；不要把 hook command 改成 <code>./scripts/...</code>，它会按当前会话目录解析。</p>
   </div>
   <div class="tab-content" id="tab2">

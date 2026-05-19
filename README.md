@@ -85,15 +85,11 @@ notify.sh ── 清除旧 pending → 创建新 pending
 
 ### 方式二：Codex CLI Marketplace（推荐 Codex 用户）
 
-仓库根目录的 `.codex-plugin/plugin.json` 与 `.agents/plugins/marketplace.json` 即为 Codex 插件清单。可以将本仓库克隆到 `~/plugins/cc-notify-hooks/`，然后在 `~/.agents/plugins/marketplace.json` 添加：
+仓库根目录的 `.agents/plugins/marketplace.json` 是 Codex marketplace，实际插件目录是 `plugins/cc-notify-hooks/`。在终端执行：
 
-```json
-{
-  "name": "cc-notify-hooks",
-  "source": {"source": "local", "path": "./plugins/cc-notify-hooks"},
-  "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
-  "category": "Productivity"
-}
+```bash
+codex plugin marketplace add MarioZZJ/cc-notify-hooks --ref v2.2.2
+codex plugin add cc-notify-hooks@cc-notify-hooks
 ```
 
 启用 hooks（必需，Codex 默认关闭）：在 `~/.codex/config.toml` 添加：
@@ -103,7 +99,7 @@ notify.sh ── 清除旧 pending → 创建新 pending
 codex_hooks = true
 ```
 
-之后在 Codex 中 `/plugin` 安装即可。
+之后重启 Codex，或在新会话中使用插件。
 
 注意：Codex 的 hook 命令运行目录是当前会话 `cwd`，不是插件根目录。`.codex-plugin/plugin.json` 只负责把 `hooks/codex-hooks.json` 作为生命周期配置打包进去；hook 命令不能写成 `./scripts/...`，否则在普通项目里会找不到脚本并报 `No such file or directory`。本插件的 Codex hook 会从 `~/.codex/plugins/cache/*/cc-notify-hooks/*/` 自动定位安装副本。
 
@@ -113,7 +109,7 @@ codex_hooks = true
 git clone https://github.com/MarioZZJ/cc-notify-hooks.git
 
 # Claude Code
-claude --plugin-dir ./cc-notify-hooks
+claude --plugin-dir ./cc-notify-hooks/plugins/cc-notify-hooks
 
 # Codex CLI: 见上文 Codex Marketplace 方式
 ```
@@ -172,7 +168,7 @@ bash test_notify.sh render       # 验证通知内容模板
 
 ```bash
 # marketplace 安装：从项目仓库获取模板
-curl -sL https://raw.githubusercontent.com/MarioZZJ/cc-notify-hooks/main/config/notify.example.json \
+curl -sL https://raw.githubusercontent.com/MarioZZJ/cc-notify-hooks/main/plugins/cc-notify-hooks/config/notify.example.json \
   -o ~/.claude/hooks/notify.json
 
 # 本地 clone：直接复制
@@ -328,29 +324,34 @@ cp config/notify.example.json ~/.claude/hooks/notify.json
 ```
 cc-notify-hooks/
 ├── .claude-plugin/
-│   ├── plugin.json          # Claude Code 插件清单
-│   └── marketplace.json     # Claude Code marketplace
+│   ├── plugin.json -> ../plugins/cc-notify-hooks/.claude-plugin/plugin.json
+│   └── marketplace.json     # Claude Code marketplace（指向 plugins/cc-notify-hooks）
 ├── .codex-plugin/
-│   └── plugin.json          # Codex CLI 插件清单
+│   └── plugin.json -> ../plugins/cc-notify-hooks/.codex-plugin/plugin.json
 ├── .agents/plugins/
-│   └── marketplace.json     # Codex CLI marketplace
-├── skills/config/SKILL.md   # 交互式配置向导（/cc-notify-hooks:config，Claude Code）
-├── hooks/
-│   ├── hooks.json           # Claude Code hook 定义
-│   └── codex-hooks.json     # Codex CLI hook 定义
-├── scripts/
-│   ├── notify.sh            # 主调度器（Claude/Codex 字段双兼容）
-│   ├── clear_pending.sh     # 清除 pending
-│   └── channels/            # 渠道脚本（每个 ~15-25 行）
-│       ├── macos.sh
-│       ├── bark.sh
-│       └── ...
-├── config/notify.example.json # 配置模板
+│   └── marketplace.json     # Codex CLI marketplace（指向 plugins/cc-notify-hooks）
+├── plugins/cc-notify-hooks/ # 真实插件根目录，Claude/Codex 都从这里安装
+│   ├── .claude-plugin/plugin.json
+│   ├── .codex-plugin/plugin.json
+│   ├── skills/config/SKILL.md
+│   ├── hooks/
+│   │   ├── hooks.json
+│   │   └── codex-hooks.json
+│   ├── scripts/
+│   │   ├── notify.sh
+│   │   ├── clear_pending.sh
+│   │   └── channels/
+│   ├── config/notify.example.json
+│   └── test_notify.sh
+├── skills -> plugins/cc-notify-hooks/skills
+├── hooks -> plugins/cc-notify-hooks/hooks
+├── scripts -> plugins/cc-notify-hooks/scripts
+├── config -> plugins/cc-notify-hooks/config
 ├── install.sh               # 独立安装入口（路由）
 ├── install/
 │   ├── claude.sh            # Claude Code 安装分支
 │   └── codex.sh             # Codex CLI 安装分支
-└── test_notify.sh           # 连通性测试
+└── test_notify.sh -> plugins/cc-notify-hooks/test_notify.sh
 ```
 
 调试日志：`/tmp/claude-hooks-debug.log`
