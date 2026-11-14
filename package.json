@@ -20,6 +20,9 @@
   },
   "magpie": {
     "hooks": "./adapters/magpie/hooks.mjs",
-    "icon": "./plugins/cc-notify-hooks/assets/icon.png"
+    "icon": "./plugins/cc-notify-hooks/assets/icon.png",
+    "options": {
+      "gatewayTimeoutMs": 3000
+    }
   }
 }

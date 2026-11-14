@@ -159,6 +159,8 @@ bash install.sh magpie
 
 安装器调用 `magpie plugin add <仓库绝对路径>`，并设置 `gatewayTimeoutMs: 3000`。插件通过异步 `onRequest` / `onResponse` 观察经过 Magpie 的请求，建议使用 Magpie 0.1.4174 或更新的兼容版本。
 
+通过 Magpie 目录或 `magpie plugin add` 直接安装时，包本身也提供 `gatewayTimeoutMs: 3000`。如果尚无通知配置，请把 [配置模板](https://raw.githubusercontent.com/MarioZZJ/cc-notify-hooks/v2.5.0/plugins/cc-notify-hooks/config/notify.example.json) 保存为 `~/.config/cc-notify-hooks/notify.json`，再启用需要的渠道并填写凭据；已有配置可通过下方 `configPath` 选项继续使用。
+
 Magpie 显示“模型响应完成”或“模型请求异常”。一次模型响应可能只是 Agent 多轮任务的一部分；审批按钮、用户回答和客户端中断由原生 Agent 集成处理。缺少会话 id 或明确标记为子代理的网关请求会跳过。原生 hooks 和 Magpie 同时启用会分别通知，可按所需事件选择入口。
 
 本包复用 Claude Code、Codex 和 dsh 的通知配置，提供按渠道独立延迟的队列，以及同会话后续请求的取消处理，覆盖 macOS、Slack、Discord、Pushover 等 11 个渠道。通知默认包含响应摘要。Magpie 社区已有的 [Notify](https://github.com/magpie-community/plugins/tree/main/packages/notify) 则提供任务时长筛选、账号掉线提醒和内嵌配置页面；选择时可依据这些实际差异。`agent-notify-hooks` 需要 Bash、`jq` 和 `curl`，渠道通过本地 JSON 配置。
