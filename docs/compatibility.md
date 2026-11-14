@@ -90,8 +90,8 @@ Claude 和 Codex 的独立安装器现在复制完整脚本目录，使用可兼
 |---|---|---|
 | Claude | 自建 marketplace 与官方目录分别管理；第三方通过开发者门户提交 | 已提供插件目录 README。发布新版本后通过门户填写仓库子目录、图标等审核材料 |
 | Codex | 自建 Git / 本地 marketplace 继续可用；含生命周期 hooks 的包目前不允许提交公共目录 | 继续自建 marketplace 分发，跟踪官方资格限制 |
-| dsh | 实验性的 Custom plugin indexes；没有预置索引源 | 包名为 `dsh-notify-hooks`，Git 来源目录为 `plugins/cc-notify-hooks`；正式发布后填写版本、时间和 commit |
-| Magpie | 社区插件列表与 GitHub topic 发现 | 根包 `agent-notify-hooks` 及入口提交到 GitHub 后添加 `magpie-plugin` topic；如申请社区列表，按其收录流程提交 |
+| dsh | 实验性的 Custom plugin indexes；没有预置索引源 | [自定义索引](https://mariozzj.github.io/cc-notify-hooks/dsh-index.json) 已提供 v2.5.0 的版本、发布时间和提交，包名为 `dsh-notify-hooks` |
+| Magpie | 社区插件列表与 GitHub topic 发现 | `agent-notify-hooks` 根包已发布，仓库已添加 `magpie-plugin` topic；社区列表申请继续由 #5 跟踪 |
 
 自建 marketplace 的可安装状态不代表官方已收录。
 
@@ -101,6 +101,6 @@ Claude 和 Codex 的独立安装器现在复制完整脚本目录，使用可兼
 
 Claude 官方仓库不再监看第三方插件 PR，社区仓库是审核结果的只读镜像；提交入口为 [开发者门户](https://claude.ai/directory/manage)。目录图标需要方形 PNG/JPEG，512–2048 px，小于 2 MB。
 
-dsh 索引的 Git 来源要求完整 40 位 commit；本项目的索引条目使用 `name: dsh-notify-hooks`、`source.path: plugins/cc-notify-hooks`。确定发布版本和提交后再生成可消费的索引，不在目录中发布占位 commit。
+dsh 索引的 Git 来源要求完整 40 位 commit；本项目的索引使用 `name: dsh-notify-hooks`、`source.path: plugins/cc-notify-hooks`，固定到 v2.5.0 的发布提交 `2f317215c2ab3525746896a4196f513ade0548d2`。索引发布在 [GitHub Pages](https://mariozzj.github.io/cc-notify-hooks/dsh-index.json)。
 
 依据：[Claude 官方仓库](https://github.com/anthropics/claude-plugins-official)、[社区仓库](https://github.com/anthropics/claude-plugins-community)、[提交要求](https://claude.com/docs/plugins/pre-submission-checklist)、[OpenAI 对 hooks 的公共目录限制](https://developers.openai.com/plugins/build/plugins#bundled-mcp-servers-and-lifecycle-hooks)、[dsh 索引格式](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.2-rc.3/docs/user/guide/plugin-market.md)、[Magpie 插件发现](https://github.com/yetone/magpie/blob/v0.1.4173/site/public/docs/plugins.html)。

@@ -137,6 +137,14 @@ bash install.sh dsh desktop      # 已初始化的 desktop profile
 
 新安装调用 `dsh plugin --profile <profile> add <仓库绝对路径>/plugins/cc-notify-hooks`，注册的包名为 `dsh-notify-hooks`。如检测到 v2.4.0 安装器写入的 home 级 `cc-notify-hooks` 条目，则保留旧链接作为兼容别名，加载更新后的模块，避免重复注册。使用 dsh 0.2.2-rc.3 或更新的兼容版本；普通 npm CLI 不能管理 `desktop` profile。未开启 HMR 时需重启对应宿主。
 
+也可从自定义索引安装：在 dsh 的 `Experimental plugins` 中启用 `Custom plugin indexes`，进入 `Discover` 并添加以下索引地址，选择 `dsh-notify-hooks`：
+
+```text
+https://mariozzj.github.io/cc-notify-hooks/dsh-index.json
+```
+
+索引指向 v2.5.0 的发布提交，包目录为 `plugins/cc-notify-hooks`。
+
 ### 方式四：Magpie 直接插件
 
 Magpie 包名为 **`agent-notify-hooks`**，由仓库根目录的 `package.json` 声明。
@@ -510,8 +518,8 @@ rm -rf ~/.codex/cc-notify-hooks
 
 - **Claude**：本仓库提供自建 marketplace。官方目录通过开发者门户提交，目录图标和申请材料由 [#5](https://github.com/MarioZZJ/cc-notify-hooks/issues/5) 跟踪。
 - **Codex**：本仓库提供自建 marketplace。OpenAI 公共目录目前不接收包含生命周期 hooks 的插件。
-- **dsh**：支持实验性的自定义索引，宿主不预置索引源。索引包名使用 `dsh-notify-hooks`，Git 来源的 `path` 为 `plugins/cc-notify-hooks`；正式发布后填入真实 commit 和版本。
-- **Magpie**：支持社区插件列表和 GitHub `magpie-plugin` topic 发现。根包 `agent-notify-hooks` 使用 `magpie.hooks` 入口，可从本仓库安装。
+- **dsh**：已提供 [自定义索引](https://mariozzj.github.io/cc-notify-hooks/dsh-index.json)，包名为 `dsh-notify-hooks`，Git 来源指向 v2.5.0 发布提交的 `plugins/cc-notify-hooks` 目录。
+- **Magpie**：仓库已添加 `magpie-plugin` topic。根包 `agent-notify-hooks` 使用 `magpie.hooks` 入口，可从本仓库安装；社区发现与列表收录状态由 #5 跟踪。
 
 来源、版本和当前限制见 [兼容性说明](docs/compatibility.md#市场分发)。
 

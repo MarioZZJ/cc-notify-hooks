@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "title": {
+    "en": "cc-notify-hooks · dsh plugins",
+    "zh": "cc-notify-hooks · dsh 插件"
+  },
+  "plugins": [
+    {
+      "name": "dsh-notify-hooks",
+      "title": {
+        "en": "dsh Notify Hooks",
+        "zh": "dsh 分级推送通知"
+      },
+      "description": {
+        "en": "Tiered notifications for approvals, questions and completed tasks, with per-session cancellation.",
+        "zh": "审批、提问和任务结束的分级推送通知，按会话与请求取消待发提醒。"
+      },
+      "author": "MarioZZJ",
+      "homepage": "https://github.com/MarioZZJ/cc-notify-hooks#安装",
+      "repository": {
+        "url": "https://github.com/MarioZZJ/cc-notify-hooks",
+        "directory": "plugins/cc-notify-hooks"
+      },
+      "versions": [
+        {
+          "version": "2.5.0",
+          "publishTimestamp": 1794675005,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/MarioZZJ/cc-notify-hooks.git",
+            "commit": "2f317215c2ab3525746896a4196f513ade0548d2",
+            "path": "plugins/cc-notify-hooks"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-rc.3"
+          }
+        }
+      ]
+    }
+  ]
+}
