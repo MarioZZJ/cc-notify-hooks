@@ -1,5 +1,7 @@
 # cc-notify-hooks
 
+当前版本：[v2.5.0](https://github.com/MarioZZJ/cc-notify-hooks/releases/tag/v2.5.0)。
+
 面向 **Claude Code、Codex CLI、DeepSeek Harness（dsh）** 的分级推送通知系统，也支持作为 **Magpie 网关 hook 插件**直接安装。支持 **11 个通知渠道**，各入口复用通知配置与发送脚本。
 
 最新兼容性基准、事件差异和市场收录规则见 [兼容性说明](docs/compatibility.md)（2026-11-14）。
@@ -151,7 +153,7 @@ Magpie 显示“模型响应完成”或“模型请求异常”。一次模型�
 
 ### dsh / Magpie 通知配置
 
-dsh 沿用 `${DSH_HOME:-~/.dsh}/cc-notify-hooks/notify.json`，新安装的状态目录为同目录下的 `state`；已有配置中的 `stateDir` 继续生效。Magpie 使用 `~/.config/cc-notify-hooks/notify.json` 和其下的 `state/magpie`。安装器只在配置不存在时创建文件，默认启用 macOS 通知。本地安装引用本仓库，安装后保留目录；远程 GitHub 安装需等包含这些入口的新版本发布。
+dsh 沿用 `${DSH_HOME:-~/.dsh}/cc-notify-hooks/notify.json`，新安装的状态目录为同目录下的 `state`；已有配置中的 `stateDir` 继续生效。Magpie 使用 `~/.config/cc-notify-hooks/notify.json` 和其下的 `state/magpie`。安装器只在配置不存在时创建文件，默认启用 macOS 通知。本地安装引用本仓库，安装后保留目录。Magpie 也可直接执行 `magpie plugin add github:MarioZZJ/cc-notify-hooks` 安装远程包。
 
 dsh 可在 profile 的 `cordis.patch.yml` 为插件配置自定义路径：
 
@@ -506,10 +508,10 @@ rm -rf ~/.codex/cc-notify-hooks
 
 ## 插件市场
 
-- **Claude**：本仓库提供自建 marketplace。官方目录通过开发者门户提交，待发布版本和目录图标准备好后申请。
+- **Claude**：本仓库提供自建 marketplace。官方目录通过开发者门户提交，目录图标和申请材料由 [#5](https://github.com/MarioZZJ/cc-notify-hooks/issues/5) 跟踪。
 - **Codex**：本仓库提供自建 marketplace。OpenAI 公共目录目前不接收包含生命周期 hooks 的插件。
 - **dsh**：支持实验性的自定义索引，宿主不预置索引源。索引包名使用 `dsh-notify-hooks`，Git 来源的 `path` 为 `plugins/cc-notify-hooks`；正式发布后填入真实 commit 和版本。
-- **Magpie**：支持社区插件列表和 GitHub `magpie-plugin` topic 发现。根包 `agent-notify-hooks` 已声明 `magpie.hooks` 入口，远程发现需先发布这些文件。
+- **Magpie**：支持社区插件列表和 GitHub `magpie-plugin` topic 发现。根包 `agent-notify-hooks` 使用 `magpie.hooks` 入口，可从本仓库安装。
 
 来源、版本和当前限制见 [兼容性说明](docs/compatibility.md#市场分发)。
 

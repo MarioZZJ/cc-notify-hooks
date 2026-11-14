@@ -1,6 +1,6 @@
 {
   "name": "dsh-notify-hooks",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "cc-notify-hooks bridge for the DeepSeek Harness (dsh): tiered push notifications for approvals, turns, and questions, reusing the cc-notify-hooks bash scripts and channels.",
   "private": true,
   "type": "module",

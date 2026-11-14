@@ -2,7 +2,7 @@
 
 核对日期：2026-11-14。特性与事件适配跟踪于 [#4](https://github.com/MarioZZJ/cc-notify-hooks/issues/4)，安装注册与市场收录跟踪于 [#5](https://github.com/MarioZZJ/cc-notify-hooks/issues/5)。
 
-本次更新基于 **v2.4.0**（2026-08-18 发布）；该版本已包含 dsh 原生插件。以下 dsh 调整属于既有实现升级，Magpie 为新增入口。来源：[本插件发布记录](https://github.com/MarioZZJ/cc-notify-hooks/releases/tag/v2.4.0)。
+**v2.5.0** 基于 v2.4.0（2026-08-18 发布）更新；后者已包含 dsh 原生插件。本版本升级既有 dsh 实现并新增 Magpie 入口。来源：[v2.5.0 发布记录](https://github.com/MarioZZJ/cc-notify-hooks/releases/tag/v2.5.0)。
 
 ## 版本基准
 

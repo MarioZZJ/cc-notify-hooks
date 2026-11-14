@@ -1,6 +1,6 @@
 {
   "name": "dsh-notify-hooks",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Tiered push notifications for DeepSeek Harness approvals, questions and task completion",
   "type": "module",
   "files": [
