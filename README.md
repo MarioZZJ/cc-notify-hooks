@@ -161,6 +161,8 @@ bash install.sh magpie
 
 Magpie 显示“模型响应完成”或“模型请求异常”。一次模型响应可能只是 Agent 多轮任务的一部分；审批按钮、用户回答和客户端中断由原生 Agent 集成处理。缺少会话 id 或明确标记为子代理的网关请求会跳过。原生 hooks 和 Magpie 同时启用会分别通知，可按所需事件选择入口。
 
+本包复用 Claude Code、Codex 和 dsh 的通知配置，提供按渠道独立延迟的队列，以及同会话后续请求的取消处理，覆盖 macOS、Slack、Discord、Pushover 等 11 个渠道。通知默认包含响应摘要。Magpie 社区已有的 [Notify](https://github.com/magpie-community/plugins/tree/main/packages/notify) 则提供任务时长筛选、账号掉线提醒和内嵌配置页面；选择时可依据这些实际差异。`agent-notify-hooks` 需要 Bash、`jq` 和 `curl`，渠道通过本地 JSON 配置。
+
 ### dsh / Magpie 通知配置
 
 dsh 沿用 `${DSH_HOME:-~/.dsh}/cc-notify-hooks/notify.json`，新安装的状态目录为同目录下的 `state`；已有配置中的 `stateDir` 继续生效。Magpie 使用 `~/.config/cc-notify-hooks/notify.json` 和其下的 `state/magpie`。安装器只在配置不存在时创建文件，默认启用 macOS 通知。本地安装引用本仓库，安装后保留目录。Magpie 也可直接执行 `magpie plugin add github:MarioZZJ/cc-notify-hooks` 安装远程包。
