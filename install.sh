@@ -6,14 +6,12 @@
 #   bash install.sh           # 交互式选择目标
 #   bash install.sh claude    # 直接安装 Claude Code 分支
 #   bash install.sh codex     # 直接安装 Codex CLI 分支
-#   bash install.sh reasonix  # 直接安装 Reasonix 分支
-#   bash install.sh dsh       # 直接安装 dsh (DeepSeek Harness) 分支
+#   bash install.sh dsh web   # 安装到 dsh 的 web profile（桌面版用 desktop）
+#   bash install.sh magpie    # 注册 Magpie 网关 hook 插件
 #
 # 或绕过路由直接调用子脚本：
 #   bash install/claude.sh
 #   bash install/codex.sh
-#   bash install/reasonix.sh
-#   bash install/dsh.sh
 
 set -euo pipefail
 
@@ -38,8 +36,8 @@ if [ -z "$TARGET" ]; then
     echo ""
     echo "    1) Claude Code  (~/.claude/)"
     echo "    2) Codex CLI    (~/.codex/)"
-    echo "    3) Reasonix     (~/.reasonix/)"
-    echo "    4) dsh          (~/.dsh/, DeepSeek Harness)"
+    echo "    3) dsh          (原生插件)"
+    echo "    4) Magpie       (网关 hook 插件)"
     echo ""
     printf "  选择 [1/2/3/4]: "
     read -r choice
@@ -47,8 +45,8 @@ if [ -z "$TARGET" ]; then
     case "$choice" in
         1) TARGET="claude" ;;
         2) TARGET="codex" ;;
-        3) TARGET="reasonix" ;;
-        4) TARGET="dsh" ;;
+        3) TARGET="dsh" ;;
+        4) TARGET="magpie" ;;
         *) echo -e "  ${YELLOW}无效选择，退出${NC}" ; exit 1 ;;
     esac
     echo ""
@@ -68,19 +66,18 @@ case "$TARGET" in
         echo ""
         exec bash "$REPO_ROOT/install/codex.sh"
         ;;
-    reasonix)
-        echo -e "${CYAN}→ 进入 Reasonix 分支${NC}"
-        echo ""
-        exec bash "$REPO_ROOT/install/reasonix.sh"
-        ;;
     dsh|deepseek|harness)
-        echo -e "${CYAN}→ 进入 dsh 分支${NC}"
-        echo ""
-        exec bash "$REPO_ROOT/install/dsh.sh"
+        exec bash "$REPO_ROOT/install/dsh.sh" "${2:-web}"
+        ;;
+    magpie)
+        exec bash "$REPO_ROOT/install/native.sh" magpie
+        ;;
+    reasonix)
+        exec bash "$REPO_ROOT/install/reasonix.sh"
         ;;
     *)
         echo "  未知目标: $TARGET"
-        echo "  支持的目标: claude, codex, reasonix, dsh"
+        echo "  支持的目标: claude, codex, dsh, magpie"
         exit 1
         ;;
 esac

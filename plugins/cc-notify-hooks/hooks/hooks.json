@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/notify.sh notification",
+            "command": "CC_NOTIFY_AGENT=claude bash \"${CLAUDE_PLUGIN_ROOT}/scripts/notify.sh\" notification",
             "timeout": 5
           }
         ]
@@ -18,7 +18,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/notify.sh stop",
+            "command": "CC_NOTIFY_AGENT=claude bash \"${CLAUDE_PLUGIN_ROOT}/scripts/notify.sh\" stop",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_NOTIFY_AGENT=claude bash \"${CLAUDE_PLUGIN_ROOT}/scripts/notify.sh\" notification error",
             "timeout": 5
           }
         ]
@@ -30,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/clear_pending.sh",
+            "command": "CC_NOTIFY_AGENT=claude bash \"${CLAUDE_PLUGIN_ROOT}/scripts/clear_pending.sh\"",
             "timeout": 3
           }
         ]
@@ -42,7 +53,62 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/clear_pending.sh",
+            "command": "CC_NOTIFY_AGENT=claude bash \"${CLAUDE_PLUGIN_ROOT}/scripts/pre_tool_use.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_NOTIFY_AGENT=claude bash \"${CLAUDE_PLUGIN_ROOT}/scripts/clear_pending.sh\" notification",
+            "timeout": 3
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_NOTIFY_AGENT=claude bash \"${CLAUDE_PLUGIN_ROOT}/scripts/clear_pending.sh\" user_input",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_NOTIFY_AGENT=claude bash \"${CLAUDE_PLUGIN_ROOT}/scripts/clear_pending.sh\" notification",
+            "timeout": 3
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_NOTIFY_AGENT=claude bash \"${CLAUDE_PLUGIN_ROOT}/scripts/clear_pending.sh\" user_input",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CC_NOTIFY_AGENT=claude bash \"${CLAUDE_PLUGIN_ROOT}/scripts/clear_pending.sh\"",
             "timeout": 3
           }
         ]

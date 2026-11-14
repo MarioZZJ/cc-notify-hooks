@@ -1,5 +1,5 @@
 /**
- * dsh-cc-notify plugin unit test (no external dependencies).
+ * dsh-notify-hooks plugin unit test (no external dependencies).
  *
  * Installs stub bash scripts into a temp "scriptsDir", drives the plugin's
  * `apply()` with a mocked cordis ctx, and asserts that each harness
@@ -28,7 +28,7 @@ function fail(label, detail = '') {
 }
 
 // ---- stub scripts that capture their invocation ---------------------------
-const tmp = mkdtempSync(join(tmpdir(), 'dsh-cc-notify-test-'))
+const tmp = mkdtempSync(join(tmpdir(), 'dsh-notify-hooks-test-'))
 const scriptsDir = join(tmp, 'scripts')
 const captureDir = join(tmp, 'capture')
 mkdirSync(scriptsDir)
@@ -233,8 +233,8 @@ const waitTick = () => new Promise((resolve) => setTimeout(resolve, 100))
 }
 
 // ---- 8. plugin meta --------------------------------------------------------
-name === 'dsh-cc-notify'
-  ? pass('plugin name is dsh-cc-notify')
+name === 'dsh-notify-hooks'
+  ? pass('plugin name is dsh-notify-hooks')
   : fail('plugin name', name)
 
 rmSync(tmp, { recursive: true, force: true })

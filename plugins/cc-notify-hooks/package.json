@@ -1,0 +1,30 @@
+{
+  "name": "dsh-notify-hooks",
+  "version": "2.4.0",
+  "description": "Tiered push notifications for DeepSeek Harness approvals, questions and task completion",
+  "type": "module",
+  "files": [
+    "dsh-plugin/index.js",
+    "dsh-plugin/cordis.patch.yml",
+    "scripts/",
+    "config/",
+    "README.md",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "author": "MarioZZJ",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MarioZZJ/cc-notify-hooks.git",
+    "directory": "plugins/cc-notify-hooks"
+  },
+  "engines": {
+    "dsh": ">=0.2.2-rc.3"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./dsh-plugin/cordis.patch.yml"
+    }
+  }
+}

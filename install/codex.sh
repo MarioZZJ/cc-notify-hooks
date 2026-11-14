@@ -9,19 +9,18 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CODEX_HOME="${CODEX_HOME:-${HOME}/.codex}"
-INSTALL_DIR="${CODEX_HOME}/cc-notify-hooks"
+CODEX_HOME_DIR="${CODEX_HOME:-${HOME}/.codex}"
+INSTALL_DIR="${CODEX_HOME_DIR}/cc-notify-hooks"
 SCRIPTS_DIR="${INSTALL_DIR}/scripts"
-STATE_DIR="${HOME}/.claude/hooks/state"  # 复用 Claude 的 state 目录，方便两边共存
+STATE_DIR="${INSTALL_DIR}/state"
 CONFIG_FILE="${INSTALL_DIR}/notify.json"
-HOOKS_FILE="${CODEX_HOME}/hooks.json"
-CODEX_CONFIG="${CODEX_HOME}/config.toml"
+HOOKS_FILE="${CODEX_HOME_DIR}/hooks.json"
+CODEX_CONFIG="${CODEX_HOME_DIR}/config.toml"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 CYAN='\033[0;36m'
-BOLD='\033[1m'
 NC='\033[0m'
 
 IS_MACOS=false
@@ -140,36 +139,34 @@ echo -e "  ${CYAN}输入编号启用渠道（逗号分隔，如 1,2,7），直�
 printf "  选择: "
 read -r selection
 
-declare -A ENABLED_CHANNELS=()
+ENABLED_CHANNELS='{}'
 if [ -n "$selection" ]; then
     IFS=',' read -ra NUMS <<< "$selection"
     for num in "${NUMS[@]}"; do
         num=$(echo "$num" | tr -d ' ')
         if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le ${#CHANNEL_DEFS[@]} ]; then
             IFS='|' read -r name _ _ _ <<< "${CHANNEL_DEFS[$((num - 1))]}"
-            ENABLED_CHANNELS["$name"]=1
+            ENABLED_CHANNELS=$(jq --arg name "$name" '.[$name] = true' <<< "$ENABLED_CHANNELS")
         fi
     done
 else
     if [ -f "$CONFIG_FILE" ]; then
-        while IFS= read -r name; do
-            ENABLED_CHANNELS["$name"]=1
-        done < <(jq -r '.channels // {} | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE" 2>/dev/null)
+        ENABLED_CHANNELS=$(jq '.channels // {} | with_entries(select(.value.enabled == true)) | map_values(true)' "$CONFIG_FILE")
     fi
-    if $IS_MACOS && [ ${#ENABLED_CHANNELS[@]} -eq 0 ]; then
-        ENABLED_CHANNELS["macos"]=1
+    if $IS_MACOS && [ "$(jq 'length' <<< "$ENABLED_CHANNELS")" -eq 0 ]; then
+        ENABLED_CHANNELS='{"macos":true}'
     fi
 fi
 
 echo ""
 
 # 收集凭证
-declare -A CHANNEL_CONFIGS=()
+CHANNEL_CONFIGS='{}'
 
 for def in "${CHANNEL_DEFS[@]}"; do
     IFS='|' read -r name display delay fields <<< "$def"
 
-    if [ "${ENABLED_CHANNELS[$name]:-}" != "1" ]; then
+    if ! jq -e --arg name "$name" '.[$name] == true' <<< "$ENABLED_CHANNELS" >/dev/null; then
         continue
     fi
     if [ -z "$fields" ]; then
@@ -201,7 +198,8 @@ for def in "${CHANNEL_DEFS[@]}"; do
 
         printf "    %s [%s]: " "$fdesc" "$hint"
         read -r input
-        CHANNEL_CONFIGS["${name}.${fkey}"]="${input:-$current}"
+        CHANNEL_CONFIGS=$(jq --arg name "$name" --arg key "$fkey" --arg value "${input:-$current}" \
+            '.[$name][$key] = $value' <<< "$CHANNEL_CONFIGS")
     done
     echo ""
 done
@@ -218,7 +216,9 @@ for def in "${CHANNEL_DEFS[@]}"; do
     IFS='|' read -r name display delay fields <<< "$def"
 
     enabled="false"
-    [ "${ENABLED_CHANNELS[$name]:-}" = "1" ] && enabled="true"
+    if jq -e --arg name "$name" '.[$name] == true' <<< "$ENABLED_CHANNELS" >/dev/null; then
+        enabled="true"
+    fi
 
     ch_json=$(jq -n --argjson enabled "$enabled" --argjson delay "$delay" '{enabled: $enabled, delay: $delay}')
 
@@ -230,7 +230,7 @@ for def in "${CHANNEL_DEFS[@]}"; do
         IFS=';' read -ra FIELD_DEFS <<< "$fields"
         for fdef in "${FIELD_DEFS[@]}"; do
             IFS=':' read -r fkey fdesc <<< "$fdef"
-            val="${CHANNEL_CONFIGS["${name}.${fkey}"]:-}"
+            val=$(jq -r --arg name "$name" --arg key "$fkey" '.[$name][$key] // empty' <<< "$CHANNEL_CONFIGS")
 
             if [ -z "$val" ] && [ -f "$CONFIG_FILE" ]; then
                 val=$(jq -r ".channels.\"${name}\".\"${fkey}\" // empty" "$CONFIG_FILE" 2>/dev/null) || true
@@ -257,12 +257,8 @@ echo -e "  ${GREEN}✓${NC} 配置已写入 $CONFIG_FILE"
 #  [3/4] 安装脚本
 # ============================================================
 echo -e "${YELLOW}[3/4]${NC} 安装脚本..."
-mkdir -p "$STATE_DIR" "$SCRIPTS_DIR/channels" "$SCRIPTS_DIR/lib"
-cp "$REPO_ROOT/scripts/notify.sh" "$SCRIPTS_DIR/notify.sh"
-cp "$REPO_ROOT/scripts/clear_pending.sh" "$SCRIPTS_DIR/clear_pending.sh"
-cp "$REPO_ROOT/scripts/pre_tool_use.sh" "$SCRIPTS_DIR/pre_tool_use.sh"
-cp "$REPO_ROOT/scripts/channels/"*.sh "$SCRIPTS_DIR/channels/"
-cp "$REPO_ROOT/scripts/lib/"*.sh "$SCRIPTS_DIR/lib/"
+mkdir -p "$STATE_DIR" "$SCRIPTS_DIR"
+cp -R "$REPO_ROOT/scripts/." "$SCRIPTS_DIR/"
 chmod +x \
     "$SCRIPTS_DIR/notify.sh" \
     "$SCRIPTS_DIR/clear_pending.sh" \
@@ -270,77 +266,73 @@ chmod +x \
     "$SCRIPTS_DIR/channels/"*.sh
 echo -e "  ${GREEN}✓${NC} 脚本已复制到 $SCRIPTS_DIR"
 
-# 让 notify.sh 能找到 Codex 模式的配置
-# notify.sh 已支持 ~/.claude/hooks/notify.json，这里再放一份在 Codex 路径
-# 通过 CC_NOTIFY_CONFIG 让脚本找到 Codex 配置（脚本本身已支持环境变量覆盖）
-# 实际方案：在 hooks.json 命令里通过 sh -c 设置环境变量后调用脚本
-
 # ============================================================
-#  [4/4] 写入 ~/.codex/hooks.json
+#  [4/4] 写入 hooks.json
 # ============================================================
 echo -e "${YELLOW}[4/4]${NC} 写入 hooks.json..."
 
-# 用绝对路径调用脚本；notify.sh 自动从 ~/.codex/cc-notify-hooks/notify.json 读取配置
-HOOKS_JSON=$(jq -n --arg s "$SCRIPTS_DIR" '
-{
-  hooks: {
-    PermissionRequest: [{
-      matcher: "*",
-      hooks: [{type: "command", command: ($s + "/notify.sh notification"), timeout: 5}]
-    }],
-    Stop: [{
-      matcher: "*",
-      hooks: [{type: "command", command: ($s + "/notify.sh stop"), timeout: 5}]
-    }],
-    UserPromptSubmit: [{
-      matcher: "*",
-      hooks: [{type: "command", command: ($s + "/clear_pending.sh"), timeout: 3}]
-    }],
-    PreToolUse: [{
-      matcher: "*",
-      hooks: [{type: "command", command: ($s + "/pre_tool_use.sh"), timeout: 3}]
-    }],
-    PostToolUse: [{
-      matcher: "^request_user_input$",
-      hooks: [{type: "command", command: ($s + "/clear_pending.sh user_input"), timeout: 3}]
-    }]
-  }
-}')
+# 事件、matcher、参数和超时均来自插件定义；安装路径由 @sh 引用。
+HOOKS_JSON=$(jq --arg scripts "$SCRIPTS_DIR" --arg config "$CONFIG_FILE" --arg state "$STATE_DIR" '
+    (.hooks[][] | .hooks[] | select(.type == "command") | .command) |= (
+        (capture("^(?:CC_NOTIFY_AGENT=codex )?bash \"\\$\\{PLUGIN_ROOT\\}/scripts/(?<script>notify\\.sh|clear_pending\\.sh|pre_tool_use\\.sh)\"(?<args>(?: .*)?)$")
+            // error("无法转换 Codex hook 命令: " + .)) as $entry
+        | "CC_NOTIFY_CONFIG=" + ($config | @sh)
+            + " CC_NOTIFY_STATE_DIR=" + ($state | @sh)
+            + " CC_NOTIFY_AGENT=codex bash " + (($scripts + "/" + $entry.script) | @sh)
+            + $entry.args
+    )
+' "$REPO_ROOT/hooks/codex-hooks.json")
 
-mkdir -p "$CODEX_HOME"
+mkdir -p "$CODEX_HOME_DIR"
+HOOKS_TMP=$(mktemp "${HOOKS_FILE}.tmp.XXXXXX")
+trap 'rm -f "$HOOKS_TMP"' EXIT
 if [ -f "$HOOKS_FILE" ]; then
-    BACKUP="${HOOKS_FILE}.backup.$(date +%Y%m%d%H%M%S)"
+    BACKUP=$(mktemp "${HOOKS_FILE}.backup.$(date +%Y%m%d%H%M%S).XXXXXX")
     cp "$HOOKS_FILE" "$BACKUP"
     echo "  已备份原 hooks.json 到: $BACKUP"
 
-    # 合并：用本插件的 hooks 覆盖同名事件，保留其他事件
-    jq -s '.[0] * .[1]' "$HOOKS_FILE" <(echo "$HOOKS_JSON") \
-        > "${HOOKS_FILE}.tmp" \
-        && mv "${HOOKS_FILE}.tmp" "$HOOKS_FILE"
+    # 仅移除调用本安装目录已知脚本的命令，保留同事件、同组中的其他 hook。
+    jq --arg scripts "$SCRIPTS_DIR" --argjson incoming "$HOOKS_JSON" '
+        def owned_hook:
+            .type == "command" and (
+                (.command // "") as $command
+                | any(["notify.sh", "clear_pending.sh", "pre_tool_use.sh"][];
+                    ($scripts + "/" + .) as $path
+                    | any([$path, ($path | @sh), ("\"" + $path + "\"")][];
+                        . as $token
+                        | ($command == $token)
+                            or ($command | startswith($token + " "))
+                            or ($command == ("bash " + $token))
+                            or ($command | startswith("bash " + $token + " "))
+                            or ($command | endswith(" bash " + $token))
+                            or ($command | contains(" bash " + $token + " "))
+                    )
+                )
+            );
+        .hooks = ((.hooks // {}) | with_entries(
+            .value |= map(
+                .hooks |= map(select(owned_hook | not))
+                | select(.hooks | length > 0)
+            )
+        ))
+        | reduce ($incoming.hooks | to_entries[]) as $event (.;
+            .hooks[$event.key] = ((.hooks[$event.key] // []) + $event.value)
+        )
+    ' "$HOOKS_FILE" > "$HOOKS_TMP"
+    mv "$HOOKS_TMP" "$HOOKS_FILE"
     echo -e "  ${GREEN}✓${NC} hooks 已合并到 $HOOKS_FILE"
 else
-    echo "$HOOKS_JSON" | jq '.' > "$HOOKS_FILE"
+    printf '%s\n' "$HOOKS_JSON" > "$HOOKS_TMP"
+    mv "$HOOKS_TMP" "$HOOKS_FILE"
     echo -e "  ${GREEN}✓${NC} 已创建 $HOOKS_FILE"
 fi
-
-# ============================================================
-#  检查 hooks 是否启用（兼容 codex_hooks 与 hooks 两种命名）
-# ============================================================
-HOOKS_ENABLED=false
-if [ -f "$CODEX_CONFIG" ]; then
-    if grep -qE '^[[:space:]]*(codex_)?hooks[[:space:]]*=[[:space:]]*true' "$CODEX_CONFIG"; then
-        HOOKS_ENABLED=true
-    fi
-fi
+trap - EXIT
 
 # ============================================================
 #  总结输出
 # ============================================================
 echo ""
-ENABLED_COUNT=0
-for name in "${!ENABLED_CHANNELS[@]}"; do
-    [ "${ENABLED_CHANNELS[$name]}" = "1" ] && ENABLED_COUNT=$((ENABLED_COUNT + 1))
-done
+ENABLED_COUNT=$(jq 'length' <<< "$ENABLED_CHANNELS")
 
 if [ "$ENABLED_COUNT" -eq 0 ]; then
     echo -e "  ${YELLOW}⚠${NC} 未启用任何推送渠道"
@@ -348,7 +340,7 @@ else
     echo "  已启用的渠道："
     for def in "${CHANNEL_DEFS[@]}"; do
         IFS='|' read -r name display delay _ <<< "$def"
-        if [ "${ENABLED_CHANNELS[$name]:-}" = "1" ]; then
+        if jq -e --arg name "$name" '.[$name] == true' <<< "$ENABLED_CHANNELS" >/dev/null; then
             echo -e "  ${GREEN}✓${NC} ${display} (延迟 ${delay}s)"
         fi
     done
@@ -359,25 +351,13 @@ echo "========================================="
 echo -e "  ${GREEN}✅ 安装完成！${NC}"
 echo ""
 
-if ! $HOOKS_ENABLED; then
-    echo -e "  ${RED}${BOLD}⚠ 重要：需要手动启用 Codex hooks${NC}"
-    echo ""
-    echo "  在 $CODEX_CONFIG 添加以下内容："
-    echo ""
-    echo -e "    ${CYAN}[features]${NC}"
-    echo -e "    ${CYAN}codex_hooks = true${NC}"
-    echo ""
-    echo "  保存后下次启动 Codex 即生效。"
-    echo ""
-else
-    echo -e "  ${GREEN}✓${NC} codex_hooks 已在 $CODEX_CONFIG 启用"
-    echo ""
-fi
-
-echo "  下一步:"
-echo "  1. 测试: bash $REPO_ROOT/test_notify.sh"
-echo "  2. 重启 Codex 使 hooks 生效"
-echo "  3. 调试: tail -f /tmp/claude-hooks-debug.log"
+echo "  Codex 0.169.0 默认启用 hooks，功能开关为 [features].hooks。"
+echo "  如曾显式关闭，请在 $CODEX_CONFIG 中将 hooks 改为 true。"
+echo "  codex_hooks 是已弃用的别名，新配置请使用 hooks。"
+echo ""
+echo "  安装或升级后，启动 Codex 并运行 /hooks，审阅并信任本次安装的 hooks。"
+echo "  调试: tail -f /tmp/claude-hooks-debug.log"
 echo ""
 echo "  修改配置: 编辑 $CONFIG_FILE"
+echo "  状态目录: $STATE_DIR"
 echo "========================================="

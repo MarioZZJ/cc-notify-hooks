@@ -1,0 +1,3 @@
+- insert:
+    - id: dsh-notify-hooks
+      name: ./index.js

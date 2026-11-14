@@ -9,6 +9,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PLUGIN_ROOT="${REPO_ROOT}/plugins/cc-notify-hooks"
 HOOKS_DIR="${HOME}/.claude/hooks"
 SCRIPTS_DIR="${HOOKS_DIR}/scripts"
 STATE_DIR="${HOOKS_DIR}/state"
@@ -148,38 +149,46 @@ printf "  选择: "
 read -r selection
 
 # 解析选择
-declare -A ENABLED_CHANNELS
+ENABLED_CHANNELS='{}'
+_enable_channel() {
+    ENABLED_CHANNELS=$(printf '%s' "$ENABLED_CHANNELS" | jq --arg name "$1" '.[$name] = true')
+}
+
+_channel_enabled() {
+    printf '%s' "$ENABLED_CHANNELS" | jq -e --arg name "$1" '.[$name] == true' >/dev/null
+}
+
 if [ -n "$selection" ]; then
     IFS=',' read -ra NUMS <<< "$selection"
     for num in "${NUMS[@]}"; do
         num=$(echo "$num" | tr -d ' ')
         if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le ${#CHANNEL_DEFS[@]} ]; then
             IFS='|' read -r name _ _ _ <<< "${CHANNEL_DEFS[$((num - 1))]}"
-            ENABLED_CHANNELS["$name"]=1
+            _enable_channel "$name"
         fi
     done
 else
     # 保持当前配置
     if [ -f "$CONFIG_FILE" ]; then
         while IFS= read -r name; do
-            ENABLED_CHANNELS["$name"]=1
+            _enable_channel "$name"
         done < <(jq -r '.channels // {} | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE" 2>/dev/null)
     fi
     # macOS fallback
-    if $IS_MACOS && [ ${#ENABLED_CHANNELS[@]} -eq 0 ]; then
-        ENABLED_CHANNELS["macos"]=1
+    if $IS_MACOS && [ "$ENABLED_CHANNELS" = '{}' ]; then
+        _enable_channel macos
     fi
 fi
 
 echo ""
 
 # 为每个启用的 channel 收集凭证
-declare -A CHANNEL_CONFIGS
+CHANNEL_CONFIGS='{}'
 
 for def in "${CHANNEL_DEFS[@]}"; do
     IFS='|' read -r name display delay fields <<< "$def"
 
-    if [ "${ENABLED_CHANNELS[$name]:-}" != "1" ]; then
+    if ! _channel_enabled "$name"; then
         continue
     fi
 
@@ -214,7 +223,8 @@ for def in "${CHANNEL_DEFS[@]}"; do
 
         printf "    %s [%s]: " "$fdesc" "$hint"
         read -r input
-        CHANNEL_CONFIGS["${name}.${fkey}"]="${input:-$current}"
+        CHANNEL_CONFIGS=$(printf '%s' "$CHANNEL_CONFIGS" | jq \
+            --arg key "${name}.${fkey}" --arg value "${input:-$current}" '.[$key] = $value')
     done
     echo ""
 done
@@ -232,7 +242,7 @@ for def in "${CHANNEL_DEFS[@]}"; do
     IFS='|' read -r name display delay fields <<< "$def"
 
     enabled="false"
-    [ "${ENABLED_CHANNELS[$name]:-}" = "1" ] && enabled="true"
+    _channel_enabled "$name" && enabled="true"
 
     # 构建 channel 对象
     ch_json=$(jq -n --argjson enabled "$enabled" --argjson delay "$delay" '{enabled: $enabled, delay: $delay}')
@@ -247,7 +257,7 @@ for def in "${CHANNEL_DEFS[@]}"; do
         IFS=';' read -ra FIELD_DEFS <<< "$fields"
         for fdef in "${FIELD_DEFS[@]}"; do
             IFS=':' read -r fkey fdesc <<< "$fdef"
-            val="${CHANNEL_CONFIGS["${name}.${fkey}"]:-}"
+            val=$(printf '%s' "$CHANNEL_CONFIGS" | jq -r --arg key "${name}.${fkey}" '.[$key] // empty')
 
             # 尝试从已有配置读取
             if [ -z "$val" ] && [ -f "$CONFIG_FILE" ]; then
@@ -278,10 +288,9 @@ echo -e "  ${GREEN}✓${NC} 配置已写入 $CONFIG_FILE"
 # ============================================================
 echo -e "${YELLOW}[3/4]${NC} 安装脚本..."
 mkdir -p "$STATE_DIR" "$SCRIPTS_DIR/channels"
-cp "$REPO_ROOT/scripts/notify.sh" "$SCRIPTS_DIR/notify.sh"
-cp "$REPO_ROOT/scripts/clear_pending.sh" "$SCRIPTS_DIR/clear_pending.sh"
-cp "$REPO_ROOT/scripts/channels/"*.sh "$SCRIPTS_DIR/channels/"
-chmod +x "$SCRIPTS_DIR/notify.sh" "$SCRIPTS_DIR/clear_pending.sh" "$SCRIPTS_DIR/channels/"*.sh
+cp -R "$PLUGIN_ROOT/scripts/." "$SCRIPTS_DIR/"
+chmod +x "$SCRIPTS_DIR/notify.sh" "$SCRIPTS_DIR/clear_pending.sh" \
+    "$SCRIPTS_DIR/pre_tool_use.sh" "$SCRIPTS_DIR/channels/"*.sh
 echo -e "  ${GREEN}✓${NC} 脚本已复制到 $SCRIPTS_DIR"
 
 # ============================================================
@@ -289,17 +298,58 @@ echo -e "  ${GREEN}✓${NC} 脚本已复制到 $SCRIPTS_DIR"
 # ============================================================
 echo -e "${YELLOW}[4/4]${NC} 配置 hooks..."
 
-# 生成 hooks JSON，路径替换为实际安装路径
-HOOKS_JSON=$(cat "$REPO_ROOT/hooks/hooks.json" | sed "s|\\\${CLAUDE_PLUGIN_ROOT}/scripts|${SCRIPTS_DIR}|g")
+# 生成 hooks JSON，显式指定本次安装的脚本、配置和状态目录
+HOOKS_JSON=$(jq --arg scripts "$SCRIPTS_DIR" --arg config "$CONFIG_FILE" --arg state "$STATE_DIR" '
+    .hooks |= with_entries(
+        .value |= map(.hooks |= map(
+            .command |= (
+                reduce ["notify.sh", "clear_pending.sh", "pre_tool_use.sh"][] as $script (.;
+                    split("\"${CLAUDE_PLUGIN_ROOT}/scripts/" + $script + "\"")
+                    | join(($scripts + "/" + $script | @sh))
+                )
+                | "CC_NOTIFY_CONFIG=" + ($config | @sh)
+                    + " CC_NOTIFY_STATE_DIR=" + ($state | @sh) + " " + .
+            )
+        ))
+    )
+' "$PLUGIN_ROOT/hooks/hooks.json")
 
 if [ -f "$SETTINGS_FILE" ]; then
     BACKUP="${SETTINGS_FILE}.backup.$(date +%Y%m%d%H%M%S)"
     cp "$SETTINGS_FILE" "$BACKUP"
     echo "  已备份原配置到: $BACKUP"
 
-    jq -s '.[0] * {hooks: .[1].hooks}' "$SETTINGS_FILE" <(echo "$HOOKS_JSON") \
-        > "${SETTINGS_FILE}.tmp" \
-        && mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
+    # 只替换本安装目录的通知 hooks；保留其他 hook、matcher 和 settings。
+    jq -s --arg scripts "$SCRIPTS_DIR" --arg config "$CONFIG_FILE" --arg state "$STATE_DIR" '
+        [
+            ["notify.sh", "clear_pending.sh", "pre_tool_use.sh"][] as $script
+            | ($scripts + "/" + $script) as $path
+            | [$path, ("\"" + $path + "\""), ($path | @sh)][]
+            | ., ("bash " + .)
+            | ., ("CC_NOTIFY_AGENT=claude " + .)
+            | ., ("CC_NOTIFY_CONFIG=" + ($config | @sh)
+                + " CC_NOTIFY_STATE_DIR=" + ($state | @sh) + " " + .)
+        ] as $owned_commands
+        | def owned_hook:
+            .command? as $command
+            | (.type == "command") and ($command | type == "string")
+              and any($owned_commands[];
+                  . as $prefix
+                  | $command == $prefix or ($command | startswith($prefix + " "))
+              );
+        .[1].hooks as $incoming
+        | .[0]
+        | .hooks = ((.hooks // {}) | with_entries(
+            .value |= map(
+                .hooks |= map(select(owned_hook | not))
+                | select(.hooks | length > 0)
+            )
+        ))
+        | reduce ($incoming | to_entries[]) as $event (.;
+            .hooks[$event.key] = ((.hooks[$event.key] // []) + $event.value)
+        )
+    ' "$SETTINGS_FILE" <(printf '%s' "$HOOKS_JSON") > "${SETTINGS_FILE}.tmp"
+    mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
 
     echo -e "  ${GREEN}✓${NC} hooks 已合并到 settings.json"
 else
@@ -312,10 +362,7 @@ fi
 #  验证
 # ============================================================
 echo ""
-ENABLED_COUNT=0
-for name in "${!ENABLED_CHANNELS[@]}"; do
-    [ "${ENABLED_CHANNELS[$name]}" = "1" ] && ENABLED_COUNT=$((ENABLED_COUNT + 1))
-done
+ENABLED_COUNT=$(printf '%s' "$ENABLED_CHANNELS" | jq 'length')
 
 if [ "$ENABLED_COUNT" -eq 0 ]; then
     echo -e "  ${YELLOW}⚠${NC} 未启用任何推送渠道"
@@ -323,7 +370,7 @@ else
     echo "  已启用的渠道："
     for def in "${CHANNEL_DEFS[@]}"; do
         IFS='|' read -r name display delay _ <<< "$def"
-        if [ "${ENABLED_CHANNELS[$name]:-}" = "1" ]; then
+        if _channel_enabled "$name"; then
             echo -e "  ${GREEN}✓${NC} ${display} (延迟 ${delay}s)"
         fi
     done
@@ -335,7 +382,7 @@ echo -e "  ${GREEN}✅ 安装完成！${NC}"
 echo ""
 echo "  下一步:"
 echo "  1. 测试: bash $REPO_ROOT/test_notify.sh"
-echo "  2. 重启 Claude Code 使 hooks 生效"
+echo "  2. settings.json 保存后通常自动加载用户 hooks；用 /hooks 查看，未更新时启动新会话"
 echo "  3. 调试: tail -f /tmp/claude-hooks-debug.log"
 echo ""
 echo "  修改配置: 编辑 $CONFIG_FILE"

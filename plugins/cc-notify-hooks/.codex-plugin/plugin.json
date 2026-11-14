@@ -11,6 +11,7 @@
   "license": "MIT",
   "keywords": ["notification", "bark", "telegram", "wechat", "feishu", "dingtalk", "slack", "discord", "pushover", "ntfy", "gotify"],
   "hooks": "./hooks/codex-hooks.json",
+  "onboardingSkill": "./skills/config/SKILL.md",
   "interface": {
     "displayName": "cc-notify-hooks",
     "shortDescription": "分级推送通知，支持 11 个渠道",

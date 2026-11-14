@@ -1,200 +1,169 @@
-/**
- * dsh-cc-notify — cc-notify-hooks bridge plugin for the DeepSeek Harness (dsh).
- *
- * A zero-dependency host plugin that reuses the cc-notify-hooks bash scripts:
- *
- *   approval/request      → notify.sh notification   (等待确认 🔔，永远代理 next())
- *   agent/turn-stopping   → notify.sh stop            (任务完成 ✅)
- *   agent/pre-step        → clear_pending.sh          (用户响应后取消排队推送 / /exit 标记)
- *   tools/pre-execute     → pre_tool_use.sh           (ask_user_question 触发等待回复通知，
- *                                                       其他工具清理 pending)
- *   tools/post-execute    → clear_pending.sh user_input (提问返回后清理)
- *
- * Configuration (plugin `config:` in ~/.dsh/cordis.patch.yml):
- *   scriptsDir  — absolute path of the cc-notify-hooks scripts directory (required)
- *   stateDir    — pending/rate-limit state directory (default ~/.claude/hooks/state,
- *                 shared with the Claude/Codex/Reasonix installs)
- *   configFile  — optional notify.json override (default: notify.sh's own lookup chain)
- */
+import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { homedir } from "node:os";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { spawn } from 'node:child_process'
-import { homedir } from 'node:os'
+export const name = "dsh-notify-hooks";
+export const inject = ["workingDirectory"];
 
-export const name = 'dsh-cc-notify'
+const bundledScripts = fileURLToPath(new URL("../scripts/", import.meta.url));
 
-/** dsh question tools that deserve a "waiting for reply" push. */
-const QUESTION_TOOLS = new Set(['ask_user_question'])
-
-/**
- * Cordis plugin entry: register listeners on the harness interception points.
- * Every waterfall listener delegates with `next()` — this plugin only
- * observes and pushes notifications, it never blocks or answers a decision.
- */
 export function apply(ctx, config = {}) {
-  const scriptsDir = typeof config.scriptsDir === 'string' ? config.scriptsDir.trim() : ''
-  if (!scriptsDir) {
-    ctx.logger.warn(
-      '[dsh-cc-notify] scriptsDir is not configured; plugin disabled. '
-      + 'Set config.scriptsDir to the cc-notify-hooks scripts directory.',
-    )
-    return
-  }
-
-  const stateDir = typeof config.stateDir === 'string' && config.stateDir.trim()
-    ? config.stateDir.trim()
-    : `${homedir()}/.claude/hooks/state`
-
-  const hookEnv = {
+  const scripts = resolve(config.scriptsDir || bundledScripts);
+  const dataDirectory = join(process.env.DSH_HOME || join(homedir(), ".dsh"), "cc-notify-hooks");
+  const environment = {
     ...process.env,
-    // Tells notify.sh which agent the event comes from (title prefix "dsh ·").
-    DSH_CC_NOTIFY: '1',
-    CC_NOTIFY_STATE_DIR: stateDir,
-  }
-  if (typeof config.configFile === 'string' && config.configFile.trim()) {
-    hookEnv.CC_NOTIFY_CONFIG = config.configFile.trim()
-  }
+    CC_NOTIFY_AGENT: "dsh",
+    DSH_CC_NOTIFY: "1",
+    CC_NOTIFY_CONFIG: resolve(config.configFile || config.configPath || process.env.CC_NOTIFY_CONFIG || join(dataDirectory, "notify.json")),
+    CC_NOTIFY_STATE_DIR: resolve(config.stateDir || join(dataDirectory, "state")),
+  };
+  const queues = new Map();
+  const sessions = new Map();
+  const approvals = new Map();
+  const lastAssistantText = new Map();
+  let disposed = false;
 
-  /** Spawn one cc-notify-hooks script with the hook payload on stdin, detached. */
-  function runScript(script, args, payload) {
-    let child
-    try {
-      child = spawn(script, args, {
-        env: hookEnv,
-        stdio: ['pipe', 'ignore', 'ignore'],
-        detached: true,
-      })
-    } catch (error) {
-      ctx.logger.warn(`[dsh-cc-notify] failed to start ${script}: ${String(error)}`)
-      return
-    }
-    child.on('error', (error) => {
-      ctx.logger.warn(`[dsh-cc-notify] ${script} failed: ${String(error)}`)
-    })
-    child.stdin.on('error', () => {})
-    child.stdin.end(payload === undefined ? '' : JSON.stringify(payload))
-    child.unref()
-  }
-
-  const notify = (payload) => runScript(`${scriptsDir}/notify.sh`, ['notification'], payload)
-  const notifyStop = (payload) => runScript(`${scriptsDir}/notify.sh`, ['stop'], payload)
-  const clear = (payload, args = []) => runScript(`${scriptsDir}/clear_pending.sh`, args, payload)
-  const preTool = (payload) => runScript(`${scriptsDir}/pre_tool_use.sh`, [], payload)
-
-  /** CC-shaped base payload: hook_event_name + session identity + cwd. */
-  function base(agent, event) {
-    const header = agent?.session?.header
+  function payload(session, fields = {}) {
+    if (!session?.header?.id || session.header.origin === "subagent") return null;
     return {
-      session_id: typeof header?.id === 'string' ? header.id : '',
-      transcript_path: '',
-      cwd: typeof header?.cwd === 'string' && header.cwd ? header.cwd : process.cwd(),
-      hook_event_name: event,
-    }
+      session_id: session.header.id,
+      cwd: ctx.workingDirectory.get(session) || session.header.cwd || "",
+      ...fields,
+    };
   }
 
-  function blocksToText(blocks) {
-    const list = Array.isArray(blocks) ? blocks : []
-    return list
-      .filter((block) => block?.type === 'text' && typeof block.text === 'string')
-      .map((block) => block.text)
-      .join('')
+  function execute(script, args, data) {
+    return new Promise((done) => {
+      const child = spawn("bash", [join(scripts, script), ...args], {
+        env: environment,
+        stdio: ["pipe", "ignore", "ignore"],
+      });
+      const timer = setTimeout(() => {
+        child.kill();
+        done();
+      }, 3000);
+      const finish = () => {
+        clearTimeout(timer);
+        done();
+      };
+      child.once("error", finish);
+      child.once("close", finish);
+      child.stdin.on("error", () => {});
+      child.stdin.end(JSON.stringify(data));
+    });
   }
 
-  // Track the latest assistant text per session so Stop notifications can
-  // carry a useful summary (the turn-stopping payload has no message).
-  const lastAssistantText = new Map()
-  ctx.on('session/event', (session, event) => {
-    try {
-      if (event?.type !== 'assistant/message') return
-      const text = blocksToText(event.data?.message?.content)
-      if (text) lastAssistantText.set(session.id, text)
-    } catch (error) {
-      ctx.logger.warn(`[dsh-cc-notify] session observer failed: ${String(error)}`)
-    }
-  })
+  // Events are synchronous observers; serialize only local state writes per session.
+  function enqueue(session, script, args = [], fields = {}) {
+    if (disposed) return Promise.resolve();
+    const data = payload(session, fields);
+    if (!data) return Promise.resolve();
+    const id = data.session_id;
+    sessions.set(id, session);
+    const task = (queues.get(id) || Promise.resolve())
+      .then(() => execute(script, args, data))
+      .catch(() => {}); // Notification failures cannot decide or block an agent action.
+    queues.set(id, task);
+    void task.then(() => {
+      if (queues.get(id) === task) queues.delete(id);
+    });
+    return task;
+  }
 
-  // Pending approval → "需要确认" push. Always delegate: never answer.
-  ctx.on('approval/request', (request, next) => {
-    try {
-      notify({
-        ...base(request?.agent, 'Notification'),
-        notification_type: 'permission_prompt',
-        message: typeof request?.reason === 'string' && request.reason
-          ? request.reason
-          : `approval requested for ${request?.toolName ?? 'tool'}`,
-        tool_name: typeof request?.toolName === 'string' ? request.toolName : '',
-      })
-    } catch (error) {
-      ctx.logger.warn(`[dsh-cc-notify] approval notification failed: ${String(error)}`)
-    }
-    return next()
-  })
+  function clear(session, kind, callId) {
+    return enqueue(session, "clear_pending.sh", kind ? [kind, ...(callId ? [callId] : [])] : []);
+  }
 
-  // Natural turn end → "任务完成" push.
-  ctx.on('agent/turn-stopping', (payload) => {
-    try {
-      const agent = payload?.agent
-      const sessionId = typeof agent?.session?.header?.id === 'string' ? agent.session.header.id : ''
-      const text = sessionId ? lastAssistantText.get(sessionId) : undefined
-      if (sessionId) lastAssistantText.delete(sessionId)
-      notifyStop({
-        ...base(agent, 'Stop'),
-        stop_hook_active: false,
-        last_assistant_message: typeof text === 'string' ? text : '',
-      })
-    } catch (error) {
-      ctx.logger.warn(`[dsh-cc-notify] stop notification failed: ${String(error)}`)
-    }
-  })
-
-  // User prompt submitted → cancel queued pushes (and mark /exit).
-  ctx.on('agent/pre-step', async (payload, next) => {
-    try {
-      const agent = payload?.agent
-      const text = blocksToText((payload?.messages ?? []).flatMap((message) => message.content ?? []))
-      clear({
-        ...base(agent, 'UserPromptSubmit'),
-        prompt: text,
-      })
-    } catch (error) {
-      ctx.logger.warn(`[dsh-cc-notify] pre-step clear failed: ${String(error)}`)
-    }
-    return next()
-  })
-
-  // Tool about to run: questions trigger a "waiting for reply" push, other
-  // tools cancel queued pushes. Never blocks the tool call.
-  ctx.on('tools/pre-execute', (exec, next) => {
-    try {
-      const agent = exec?.agent
-      const toolName = typeof exec?.name === 'string' ? exec.name : ''
-      const payload = {
-        ...base(agent, 'PreToolUse'),
-        tool_name: QUESTION_TOOLS.has(toolName) ? 'request_user_input' : toolName,
-        tool_input: exec?.arguments ?? {},
-        tool_use_id: typeof exec?.callId === 'string' ? exec.callId : '',
+  ctx.on("session/event", (session, event) => {
+    if (!session?.header?.id || session.header.origin === "subagent") return;
+    const id = session.header.id;
+    const data = event.data;
+    if (event.type === "assistant/message") {
+      const text = (data.message?.content || [])
+        .filter((block) => block.type === "text" && typeof block.text === "string")
+        .map((block) => block.text).join("");
+      if (text) lastAssistantText.set(id, text);
+    } else if (event.type === "turn/start") {
+      lastAssistantText.delete(id);
+      void clear(session);
+    } else if (event.type === "approval/asked") {
+      const pending = approvals.get(id) || new Set();
+      pending.add(data.id);
+      approvals.set(id, pending);
+      void enqueue(session, "notify.sh", ["notification", "permission"], {
+        hook_event_name: "PermissionRequest",
+        tool_use_id: data.id,
+        tool_name: data.toolName,
+        message: data.reason || "dsh 正在等待授权",
+      });
+    } else if (event.type === "approval/decided") {
+      approvals.get(id)?.delete(data.id);
+      if (approvals.get(id)?.size === 0) approvals.delete(id);
+      void clear(session, "permission", data.id);
+    } else if (event.type === "turn/end") {
+      const reason = data.reason.kind;
+      approvals.delete(id);
+      if (reason === "completed") {
+        void enqueue(session, "notify.sh", ["stop"], {
+          hook_event_name: "Stop",
+          turn_id: String(data.turn),
+          last_assistant_message: lastAssistantText.get(id) || "",
+        });
+      } else if (reason === "error" || reason === "max-tokens" || reason === "blocked") {
+        void enqueue(session, "notify.sh", ["notification", "error"], {
+          hook_event_name: "StopFailure",
+          turn_id: String(data.turn),
+          message: data.reason.error?.message ||
+            (reason === "max-tokens" ? "dsh 回合达到输出 token 上限" : "dsh 回合未正常完成"),
+        });
+      } else {
+        void clear(session);
       }
-      preTool(payload)
-    } catch (error) {
-      ctx.logger.warn(`[dsh-cc-notify] pre-tool dispatch failed: ${String(error)}`)
+      lastAssistantText.delete(id);
     }
-    return next()
-  })
+  });
 
-  // Question tool returned → clear the user_input pending marker.
-  ctx.on('tools/post-execute', (exec, _result, next) => {
+  ctx.on("user-questions/request", async (request, next) => {
+    const session = request.agent?.session;
+    // An approval can also be rendered as a question card; its audit events own that notification.
+    const approvalCard = request.questions?.every((question) => question.intent?.kind === "approval");
+    if (!session?.header?.id || session.header.origin === "subagent" ||
+        !request.questions?.length || request.signal?.aborted ||
+        (approvalCard && approvals.get(session.header.id)?.size > 0)) {
+      return next();
+    }
+    const callId = request.wait?.callId || randomUUID();
+    void enqueue(session, "notify.sh", ["notification", "user_input"], {
+      hook_event_name: "UserQuestion",
+      tool_use_id: callId,
+      tool_name: "ask_user_question",
+      tool_input: { questions: request.questions },
+    });
     try {
-      if (QUESTION_TOOLS.has(exec?.name)) {
-        clear({
-          ...base(exec?.agent, 'PostToolUse'),
-          tool_name: 'request_user_input',
-          tool_use_id: typeof exec?.callId === 'string' ? exec.callId : '',
-        }, ['user_input'])
-      }
-    } catch (error) {
-      ctx.logger.warn(`[dsh-cc-notify] post-tool clear failed: ${String(error)}`)
+      return await next();
+    } finally {
+      void clear(session, "user_input", callId);
     }
-    return next()
-  })
+  }, { prepend: true });
 
-  ctx.logger.info(`[dsh-cc-notify] active (scriptsDir=${scriptsDir}, stateDir=${stateDir})`)
+  ctx.on("agent/inbox/inserted", ({ agent }) => {
+    void clear(agent.session);
+  });
+  ctx.on("agent/disposed", ({ agent }) => {
+    const session = agent.session;
+    void clear(session).then(() => sessions.delete(session.header.id));
+    approvals.delete(session.header.id);
+    lastAssistantText.delete(session.header.id);
+  });
+
+  ctx.effect(() => async () => {
+    const pending = [...sessions.values()].map((session) => clear(session));
+    disposed = true;
+    await Promise.allSettled(pending);
+    sessions.clear();
+    approvals.clear();
+    lastAssistantText.clear();
+  }, "dsh-notify-hooks: cancel pending notifications");
 }

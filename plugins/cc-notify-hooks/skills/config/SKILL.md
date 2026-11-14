@@ -1,6 +1,6 @@
 ---
 name: config
-description: 交互式配置通知渠道。使用 /cc-notify-hooks:config 启动配置向导，选择渠道、设置凭证和延迟。
+description: 为 cc-notify-hooks 配置通知渠道、凭证和延迟。支持 Claude Code、Codex、dsh 和 Magpie；需要配置推送通知时使用。
 ---
 
 # 通知渠道配置向导
@@ -10,10 +10,16 @@ description: 交互式配置通知渠道。使用 /cc-notify-hooks:config 启动
 ## 配置文件位置
 
 按优先级检查：
-1. `${CLAUDE_PLUGIN_DATA}/notify.json`（插件数据目录，推荐）
-2. `~/.claude/hooks/notify.json`（传统路径）
+1. `${CC_NOTIFY_CONFIG}`（已显式指定的文件）
+2. `${PLUGIN_DATA}/notify.json`（宿主提供的插件数据目录）
+3. `${CLAUDE_PLUGIN_DATA}/notify.json`（Claude 插件数据目录）
+4. `~/.config/cc-notify-hooks/notify.json`（Magpie 默认配置，也可共享给其他宿主）
+5. `${CODEX_HOME:-~/.codex}/cc-notify-hooks/notify.json`
+6. `${REASONIX_HOME:-~/.reasonix}/cc-notify-hooks/notify.json`
+7. `${DSH_HOME:-~/.dsh}/cc-notify-hooks/notify.json`
+8. `~/.claude/hooks/notify.json`
 
-如果两个路径都不存在配置文件，使用路径 1 创建新配置。
+只检查已定义且非空的环境变量。已有配置继续写回原路径；新配置优先写入显式指定路径或当前宿主的插件数据目录。Codex、Claude、dsh 的独立安装各自使用其宿主目录中的路径；Magpie 使用公共配置路径。通知凭证不得写入插件安装缓存。
 
 ## 渠道信息
 
@@ -51,7 +57,11 @@ description: 交互式配置通知渠道。使用 /cc-notify-hooks:config 启动
 - **Slack**: 创建 Slack App → Incoming Webhooks → Add New Webhook → 复制 URL
 - **Discord**: 服务器设置 → 整合 → Webhooks → 新建 → 复制 URL
 
-## AskUserQuestion 约束
+## 交互方式
+
+使用当前宿主可用的问答工具。Claude Code 可用 `AskUserQuestion`，Codex 可在工具允许时使用 `request_user_input`；宿主没有结构化问答工具时直接在对话中询问。后文的 `AskUserQuestion` 步骤均按这一规则执行，不要求其他宿主提供同名工具。
+
+`request_user_input` 不支持多选，改为请用户输入渠道名称或逐个询问启用状态，不传入 `multiSelect`。
 
 **关键限制**：AskUserQuestion 每个问题最多 4 个选项（minItems=2, maxItems=4）。有 11 个渠道无法一次列全。
 
@@ -65,7 +75,7 @@ description: 交互式配置通知渠道。使用 /cc-notify-hooks:config 启动
 
 ### 第一步：读取现有配置
 
-用 Bash 读取配置文件（先检查 `${CLAUDE_PLUGIN_DATA}/notify.json`，再检查 `~/.claude/hooks/notify.json`）。如果不存在，记住稍后需要创建新配置。解析每个渠道的 enabled 状态和凭证是否为占位值。
+按“配置文件位置”读取配置文件。如果不存在，确定稍后创建的路径。解析每个渠道的 enabled 状态和凭证是否为占位值，展示时隐藏凭证值。
 
 ### 第二步：展示当前状态
 
@@ -137,8 +147,8 @@ description: 交互式配置通知渠道。使用 /cc-notify-hooks:config 启动
 将最终配置写入配置文件。
 
 **写入规则**：
-- 如果原配置来自 `~/.claude/hooks/notify.json`，继续写入该路径
-- 如果是新配置，写入 `${CLAUDE_PLUGIN_DATA}/notify.json`（先用 Bash mkdir -p 确保目录存在）
+- 按“配置文件位置”选择文件，已有配置继续写回原路径
+- 新建配置时先创建父目录，使用仅当前用户可读写的文件权限
 - 保持 JSON 格式化（缩进 2 空格）
 - 不要丢失用户未修改的渠道配置
 - 始终包含 `rate_limit` 字段
@@ -150,12 +160,12 @@ description: 交互式配置通知渠道。使用 /cc-notify-hooks:config 启动
 
 测试用 Bash 运行：
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/test_notify.sh <channel_name>
+CC_NOTIFY_CONFIG="<已选择的配置文件绝对路径>" bash "<插件根目录>/test_notify.sh" <channel_name>
 ```
 
 ## 注意事项
 
-- 所有交互使用 AskUserQuestion，不要假设用户的选择
+- 按当前宿主支持的交互方式询问；用户已明确给定的渠道、凭证和延迟直接采用
 - 展示凭证时注意脱敏（只显示前 4 位和后 4 位，中间用 *** 代替）
 - 用中文与用户交互
 - 每次修改后立即保存，避免中途丢失

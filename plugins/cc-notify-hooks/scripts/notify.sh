@@ -6,8 +6,7 @@
 #   读取 JSON 配置 → 解析事件 → 过滤 → 按 delay 排序 → 后台分级推送
 #   用户交互 → clear_pending.sh 清除 pending → 推送自动取消
 #
-# 用法：由 Claude Code / Codex / Reasonix / dsh 的 hook 自动调用，
-#       通过 stdin 接收 JSON 事件（字段名按 agent 方言兼容）
+# 用法：由 hooks 自动调用，通过 stdin 接收 JSON
 
 set -euo pipefail
 
@@ -30,6 +29,8 @@ elif [ -n "${PLUGIN_DATA:-}" ] && [ -f "${PLUGIN_DATA}/notify.json" ]; then
     CONFIG_FILE="${PLUGIN_DATA}/notify.json"
 elif [ -n "${CLAUDE_PLUGIN_DATA:-}" ] && [ -f "${CLAUDE_PLUGIN_DATA}/notify.json" ]; then
     CONFIG_FILE="${CLAUDE_PLUGIN_DATA}/notify.json"
+elif [ -f "${HOME}/.config/cc-notify-hooks/notify.json" ]; then
+    CONFIG_FILE="${HOME}/.config/cc-notify-hooks/notify.json"
 elif [ -f "${CODEX_HOME_DIR}/cc-notify-hooks/notify.json" ]; then
     CONFIG_FILE="${CODEX_HOME_DIR}/cc-notify-hooks/notify.json"
 elif [ -f "${REASONIX_HOME_DIR}/cc-notify-hooks/notify.json" ]; then
@@ -88,7 +89,7 @@ fi
 # 提取字段
 # hook_event_name（Claude/Codex/插件导入格式）优先，event（Reasonix 原生格式）兜底
 HOOK_EVENT=$(printf '%s' "$EVENT_DATA" | jq -r '.hook_event_name // .event // empty' 2>/dev/null || echo "")
-MESSAGE=$(printf '%s' "$EVENT_DATA" | jq -r '.message // .prompt // empty' 2>/dev/null || echo "")
+MESSAGE=$(printf '%s' "$EVENT_DATA" | jq -r '.message // .prompt // .error_description // .error // empty | if type == "string" then . else tostring end' 2>/dev/null || echo "")
 CWD=$(printf '%s' "$EVENT_DATA" | jq -r '.cwd // empty' 2>/dev/null || echo "")
 PROJECT=$(basename "${CWD:-unknown}")
 [ -n "$PROJECT" ] || PROJECT="unknown"
@@ -159,7 +160,7 @@ if [ "${CC_NOTIFY_RENDER_ONLY:-}" != "1" ]; then
         IFS=$'\t' read -r LAST LAST_TOOL_USE_KEY < "$RATE_FILE" || true
         [[ "$LAST" =~ ^[0-9]+$ ]] || LAST=0
 
-        if [ "$EVENT_KIND" = "user_input" ] && [ -n "$TOOL_USE_ID" ]; then
+        if { [ "$EVENT_KIND" = "user_input" ] || [ "$EVENT_KIND" = "permission" ]; } && [ -n "$TOOL_USE_ID" ]; then
             [ "$LAST_TOOL_USE_KEY" = "$TOOL_USE_KEY" ] && exit 0
         elif [ $((NOW - LAST)) -lt "$RATE_LIMIT" ]; then
             exit 0
@@ -171,9 +172,14 @@ fi
 # ============================================================
 #  构造通知内容
 # ============================================================
-# Agent 识别：显式覆盖 > Reasonix 插件环境 > dsh 插件环境 > 事件/path 特征
 if [ -n "${CC_NOTIFY_AGENT:-}" ]; then
-    AGENT_NAME="${CC_NOTIFY_AGENT}"
+    case "$CC_NOTIFY_AGENT" in
+        claude) AGENT_NAME="Claude Code" ;;
+        codex) AGENT_NAME="Codex" ;;
+        dsh) AGENT_NAME="dsh" ;;
+        magpie) AGENT_NAME="Magpie" ;;
+        *) AGENT_NAME="$CC_NOTIFY_AGENT" ;;
+    esac
 elif [ -n "${REASONIX_PLUGIN_ROOT:-}" ]; then
     AGENT_NAME="Reasonix"
 elif [ -n "${DSH_CC_NOTIFY:-}" ]; then
@@ -215,7 +221,16 @@ SUMMARY_SOURCE=""
 STATUS_LABEL="需要确认 🔔"
 STATUS_COLOR="orange"
 
-if [ "$EVENT_KIND" = "user_input" ]; then
+if [ "$EVENT_KIND" = "gateway_response" ]; then
+    STATUS_LABEL="模型响应完成 💬"
+    STATUS_COLOR="blue"
+    SUMMARY_SOURCE="${MESSAGE:-模型已返回响应}"
+elif [ "$EVENT_KIND" = "error" ] || [ "$EVENT_KIND" = "gateway_error" ]; then
+    STATUS_LABEL="任务异常 ⚠️"
+    [ "$EVENT_KIND" = "gateway_error" ] && STATUS_LABEL="模型请求异常 ⚠️"
+    STATUS_COLOR="red"
+    SUMMARY_SOURCE="${MESSAGE:-任务因错误停止}"
+elif [ "$EVENT_KIND" = "user_input" ]; then
     STATUS_LABEL="需要回复 🔔"
     STATUS_COLOR="orange"
     SUMMARY_SOURCE="${QUESTION_HEADER:-${QUESTION_TEXT:-${AGENT_NAME} 正在等待你的输入}}"
@@ -310,7 +325,13 @@ fi
 # ============================================================
 #  创建 pending 标记
 # ============================================================
-rm -f "${STATE_DIR}/pending_${SESSION_KEY}_"* 2>/dev/null || true
+if [ "${CC_NOTIFY_AGENT:-}" = "dsh" ] &&
+   { [ "$EVENT_KIND" = "permission" ] || [ "$EVENT_KIND" = "user_input" ]; }; then
+    # dsh 可以同时等待多个审批，保留其他请求的通知。
+    rm -f "${STATE_DIR}/pending_${SESSION_KEY}_${EVENT_KIND_KEY}_${TOOL_USE_KEY}_"* 2>/dev/null || true
+else
+    rm -f "${STATE_DIR}/pending_${SESSION_KEY}_"* 2>/dev/null || true
+fi
 PENDING_FILE="${STATE_DIR}/pending_${SESSION_KEY}_${EVENT_KIND_KEY}_${TOOL_USE_KEY}_${NOW}_$$"
 echo "$EVENT_KIND" > "$PENDING_FILE"
 
@@ -360,17 +381,18 @@ QUEUE=$(build_queue)
         wait_time=$((ch_delay - elapsed))
         if [ "$wait_time" -gt 0 ]; then
             sleep "$wait_time"
-            # 等待后检查 pending
-            if [ ! -f "$PENDING_FILE" ]; then
-                exit 0
-            fi
             elapsed=$ch_delay
+        fi
+
+        # 延迟为 0 或多个渠道延迟相同时，也在每次发送前检查取消状态。
+        if [ ! -f "$PENDING_FILE" ]; then
+            exit 0
         fi
 
         # 加载并调用 channel
         source "${CHANNELS_DIR}/${ch_name}.sh"
         ch_config=$(jq -c ".channels.\"${ch_name}\"" "$CONFIG_FILE" 2>/dev/null || echo "{}")
-        "send_${ch_name}" "$TITLE" "$BODY" "$ch_config" "$EVENT_JSON"
+        "send_${ch_name}" "$TITLE" "$BODY" "$ch_config" "$EVENT_JSON" || true
     done
 
     rm -f "$PENDING_FILE"

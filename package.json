@@ -1,0 +1,22 @@
+{
+  "name": "agent-notify-hooks",
+  "version": "2.4.0",
+  "description": "Tiered gateway notifications for Magpie",
+  "type": "module",
+  "files": [
+    "adapters/magpie/",
+    "plugins/cc-notify-hooks/scripts/",
+    "plugins/cc-notify-hooks/config/",
+    "README.md",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "author": "MarioZZJ",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MarioZZJ/cc-notify-hooks.git"
+  },
+  "magpie": {
+    "hooks": "./adapters/magpie/hooks.mjs"
+  }
+}

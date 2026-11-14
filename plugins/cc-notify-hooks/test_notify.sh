@@ -34,6 +34,8 @@ elif [ -n "${PLUGIN_DATA:-}" ] && [ -f "${PLUGIN_DATA}/notify.json" ]; then
     CONFIG_FILE="${PLUGIN_DATA}/notify.json"
 elif [ -n "${CLAUDE_PLUGIN_DATA:-}" ] && [ -f "${CLAUDE_PLUGIN_DATA}/notify.json" ]; then
     CONFIG_FILE="${CLAUDE_PLUGIN_DATA}/notify.json"
+elif [ -f "${HOME}/.config/cc-notify-hooks/notify.json" ]; then
+    CONFIG_FILE="${HOME}/.config/cc-notify-hooks/notify.json"
 elif [ -f "${CODEX_HOME_DIR}/cc-notify-hooks/notify.json" ]; then
     CONFIG_FILE="${CODEX_HOME_DIR}/cc-notify-hooks/notify.json"
 elif [ -f "${HOME}/.claude/hooks/notify.json" ]; then
