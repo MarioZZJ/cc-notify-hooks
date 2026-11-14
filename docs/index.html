@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light">
   <meta name="theme-color" content="#f7f7f2">
+  <link rel="icon" type="image/jpeg" href="assets/dsh-icon.jpg">
   <title>cc-notify-hooks · Claude Code、Codex CLI、dsh 与 Magpie 分级通知</title>
   <meta name="description" content="为 Claude Code、Codex CLI、DeepSeek Harness（dsh）和 Magpie 提供 11 渠道分级通知。独立设置推送延迟，收到响应后取消待发提醒。查看四种工具的安装命令、通知演示与兼容性说明。">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="zh_CN">
+  <meta property="og:image" content="https://mariozzj.github.io/cc-notify-hooks/assets/icon.png">
   <meta property="og:title" content="cc-notify-hooks · 四种工具，11 渠道分级通知">
   <meta property="og:description" content="Claude Code、Codex CLI、dsh 与 Magpie 的通知入口。先用秒级提醒，再用分钟级消息；收到响应信号后，取消对应待发通知。">
   <style>
@@ -237,11 +239,7 @@
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="brand" href="#main" aria-label="cc-notify-hooks 首页">
-        <svg class="bell-mark" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-          <path d="M10 15a8 8 0 0 1 16 0v6l3 4H7l3-4v-6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-          <path d="M15 29a3.4 3.4 0 0 0 6 0M18 4v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          <circle cx="27" cy="9" r="4" fill="currentColor" stroke="var(--paper)" stroke-width="2"/>
-        </svg>
+        <img class="bell-mark" src="assets/dsh-icon.jpg" width="34" height="34" alt="">
         cc-notify-hooks
       </a>
       <nav class="nav" aria-label="主导航">
@@ -278,10 +276,7 @@
         </div>
         <div class="demo-body">
           <div class="notification">
-            <svg class="bell-mark" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-              <rect x="1" y="1" width="34" height="34" rx="9" fill="var(--tint)"/>
-              <path d="M12 16a6 6 0 0 1 12 0v5l2 3H10l2-3v-5ZM16 28h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <img class="bell-mark" src="assets/dsh-icon.jpg" width="32" height="32" alt="">
             <div>
               <small>通知内容示意</small>
               <h3>Codex · 需要回复</h3>

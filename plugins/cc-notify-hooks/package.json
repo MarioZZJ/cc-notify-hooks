@@ -2,12 +2,14 @@
   "name": "dsh-notify-hooks",
   "version": "2.5.0",
   "description": "Tiered push notifications for DeepSeek Harness approvals, questions and task completion",
+  "icon": "./assets/dsh-icon.jpg",
   "type": "module",
   "files": [
     "dsh-plugin/index.js",
     "dsh-plugin/cordis.patch.yml",
     "scripts/",
     "config/",
+    "assets/dsh-icon.jpg",
     "README.md",
     "LICENSE"
   ],

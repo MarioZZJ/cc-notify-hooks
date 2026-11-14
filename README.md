@@ -1,5 +1,7 @@
 # cc-notify-hooks
 
+<img src="plugins/cc-notify-hooks/assets/icon.png" alt="cc-notify-hooks" width="96" height="96">
+
 当前版本：[v2.5.0](https://github.com/MarioZZJ/cc-notify-hooks/releases/tag/v2.5.0)。
 
 面向 **Claude Code、Codex CLI、DeepSeek Harness（dsh）** 的分级推送通知系统，也支持作为 **Magpie 网关 hook 插件**直接安装。支持 **11 个通知渠道**，各入口复用通知配置与发送脚本。
@@ -522,6 +524,8 @@ rm -rf ~/.codex/cc-notify-hooks
 - **Magpie**：仓库已添加 `magpie-plugin` topic。根包 `agent-notify-hooks` 使用 `magpie.hooks` 入口，可从本仓库安装；社区发现与列表收录状态由 #5 跟踪。
 
 来源、版本和当前限制见 [兼容性说明](docs/compatibility.md#市场分发)。
+
+Claude 开发者门户的填写内容、数据处理说明和账号声明见 [目录提交材料](docs/marketplace-submission.md)。
 
 ## License
 

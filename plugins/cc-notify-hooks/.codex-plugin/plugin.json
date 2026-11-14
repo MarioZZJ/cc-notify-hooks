@@ -19,6 +19,9 @@
     "developerName": "MarioZZJ",
     "category": "Productivity",
     "capabilities": ["Read"],
-    "websiteURL": "https://github.com/MarioZZJ/cc-notify-hooks"
+    "websiteURL": "https://github.com/MarioZZJ/cc-notify-hooks",
+    "logo": "./assets/icon.png",
+    "composerIcon": "./assets/icon.png",
+    "brandColor": "#146B7A"
   }
 }

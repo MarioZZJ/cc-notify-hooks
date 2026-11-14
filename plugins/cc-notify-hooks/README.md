@@ -1,5 +1,7 @@
 # cc-notify-hooks
 
+<img src="assets/dsh-icon.jpg" alt="cc-notify-hooks" width="96" height="96">
+
 cc-notify-hooks sends tiered notifications when your coding agent needs a reply,
 requests permission, finishes a task, or reports a supported failure event.
 Configure a short delay for desktop or phone notifications and a longer delay
@@ -68,3 +70,5 @@ coverage, cancellation timing, and uninstall instructions.
 
 MIT License. Report problems through the
 [issue tracker](https://github.com/MarioZZJ/cc-notify-hooks/issues).
+Detailed data handling and directory submission information are available in the
+[submission guide](https://github.com/MarioZZJ/cc-notify-hooks/blob/main/docs/marketplace-submission.md).

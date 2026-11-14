@@ -7,6 +7,7 @@
   "plugins": [
     {
       "name": "dsh-notify-hooks",
+      "icon": "assets/dsh-icon.jpg",
       "title": {
         "en": "dsh Notify Hooks",
         "zh": "dsh 分级推送通知"
