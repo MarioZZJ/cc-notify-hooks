@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="两支独立的 HTML 场景短片：长任务完成，手机叫你回来验收；多个 Agent 会话并行，macOS 通知提醒你及时切回。">
+  <meta name="description" content="长任务完成后，手机提醒你回来验收；多个 Agent 会话并行时，桌面通知提醒你及时切回。">
   <meta name="theme-color" content="#f5f3eb">
   <title>通知，会找到你 · cc-notify-hooks</title>
   <link rel="icon" type="image/svg+xml" href="assets/notify-mark.svg">
@@ -36,14 +36,13 @@
     <symbol id="i-apple" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M16.4 2c.2 1.8-1.1 3.5-2.7 3.9-.3-1.7 1-3.4 2.7-3.9ZM19 16.6c-.5 1.2-.8 1.8-1.4 2.8-.9 1.3-2.1 2.9-3.6 2.9-1.3 0-1.6-.8-3.3-.8-1.6 0-2 .8-3.3.8-1.5 0-2.6-1.5-3.5-2.8-2.5-3.8-2.8-8.3-1.2-10.7 1.1-1.7 2.8-2.7 4.4-2.7 1.4 0 2.3.8 3.5.8s2-.8 3.7-.8c1.4 0 2.9.8 3.9 2.1-3.4 1.8-2.9 6.7.8 8.4Z"/></symbol>
   </svg>
 
-  <main class="player" id="player" aria-label="cc-notify-hooks 场景短片">
+  <main class="player" id="player" aria-label="cc-notify-hooks 使用场景">
     <header class="player-nav">
       <a class="brand" href="index.html" aria-label="返回 cc-notify-hooks 首页"><img src="assets/notify-mark.svg" alt="" width="25" height="25"><span>cc / notify</span><span class="back-label">返回首页</span></a>
-      <nav class="scene-switch" aria-label="选择独立短片">
+      <nav class="scene-switch" aria-label="选择通知场景">
         <button type="button" data-select-scene="long" aria-pressed="true"><span class="scene-number">01</span> 长通知 <span class="scene-length">24s</span></button>
         <button type="button" data-select-scene="short" aria-pressed="false"><span class="scene-number">02</span> 短通知 <span class="scene-length">14s</span></button>
       </nav>
-      <span class="nav-note">HTML 短片 · 时间已压缩</span>
     </header>
 
     <div class="film-frame" id="film-frame">
@@ -59,7 +58,7 @@
             <div class="camera-notch"></div>
 
             <article class="mac-window task-window" id="task-window">
-              <div class="window-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>checkout — Codex</span><span class="titlebar-trailing">⌘1</span></div>
+              <div class="window-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>checkout — ChatGPT Codex</span><span class="titlebar-trailing">⌘1</span></div>
               <div class="terminal-body">
                 <div class="terminal-location">~/projects/checkout <span>refactor / payments</span></div>
                 <div class="task-prompt"><span>›</span><p id="task-prompt-text">重构结算模块，补齐回归测试，再检查兼容性。</p><i class="text-caret" id="prompt-caret"></i></div>
@@ -68,19 +67,19 @@
                   <div class="task-checklist"><div id="check-1"><span>✓</span>分析支付链路与依赖</div><div id="check-2"><span>✓</span>重构结算模块，保留兼容接口</div><div id="check-3"><span>✓</span>补齐回归测试与异常分支</div><div id="check-4"><span>✓</span>生成变更说明与验收清单</div></div>
                   <div class="agent-progress"><i id="agent-progress"></i></div>
                   <div class="log-viewport"><div class="work-log" id="work-log"><p><span>read</span> src/payments/checkout.ts</p><p><span>read</span> src/payments/adapters.ts</p><p><span>edit</span> extract payment validation</p><p><span>test</span> checkout / legacy compatibility</p><p><span>edit</span> handle retries &amp; rollback</p><p><span>test</span> 86 assertions passed</p><p><span>write</span> docs/checkout-review.md</p><p><span>done</span> ready for your review</p></div></div>
-                  <div class="terminal-status"><span class="working-dot"></span><span id="terminal-status">Working · no need to keep watching</span><b id="fast-forward">›› 时间快进</b></div>
+                  <div class="terminal-status"><span class="working-dot"></span><span id="terminal-status">Working · no need to keep watching</span><b id="fast-forward">›› 持续处理中</b></div>
                 </div>
                 <div class="task-review" id="task-review"><div class="agent-heading"><span class="agent-symbol">✳</span><strong>重构完成，等你验收。</strong><span class="passed-pill">86 tests passed</span></div><p class="review-summary">兼容旧接口，补齐失败重试与回滚。</p><div class="review-file" id="review-file"><span class="file-mark">≡</span><div><b>checkout-review.md</b><small>变更说明 · 测试结果 · 验收清单</small></div><span>↗</span></div><div class="review-diff"><p><span>+</span> extractPaymentValidation(order)</p><p><span>+</span> await retryWithBackoff(payment)</p><p><span>+</span> preserveLegacyCheckout(request)</p></div><div class="review-done" id="review-done"><svg><use href="#i-check"/></svg>验收通过，继续下一件事。</div></div>
               </div>
             </article>
 
             <div class="parallel-windows" id="parallel-windows">
-              <article class="mac-window api-window" id="api-window"><div class="window-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>api-service — Codex</span><span class="titlebar-trailing">⌘1</span></div><div class="terminal-body"><div class="terminal-location">~/projects/api-service <span>feature / v2</span></div><div class="agent-heading"><span class="agent-symbol">✳</span><strong id="api-heading">正在更新接口</strong></div><p class="agent-description" id="api-description">迁移逻辑已准备好，需要确认兼容策略。</p><div class="api-question"><div class="answer-option" id="api-answer"><span>1</span><div><b>保留 /v1，同时新增 /v2</b><small>让现有客户端继续正常使用</small></div><span class="answer-check">✓</span></div><div class="answer-option secondary"><span>2</span><div><b>直接替换为 /v2</b><small>同步更新调用方</small></div></div></div><div class="session-footer" id="api-footer">等待你的选择</div></div></article>
-              <article class="mac-window tests-window" id="tests-window"><div class="window-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>test-suite — dsh</span><span class="titlebar-trailing">⌘2</span></div><div class="terminal-body"><div class="terminal-location">~/projects/test-suite <span>regression</span></div><div class="agent-heading"><span class="agent-symbol">✳</span><strong id="tests-heading">回归测试运行中</strong></div><div class="test-count"><b id="tests-count">48</b><span> / 86 tests</span><span class="test-badge" id="tests-badge">RUNNING</span></div><div class="test-results"><p><span>✓</span> checkout / payment flow <b>32 passed</b></p><p><span>✓</span> api / backwards compatibility <b>28 passed</b></p><p><span>✓</span> retry / rollback <b>26 passed</b></p></div><div class="session-footer" id="tests-footer">正在检查剩余异常分支…</div></div></article>
+              <article class="mac-window api-window" id="api-window"><div class="window-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>api-service — ChatGPT Codex</span><span class="titlebar-trailing">⌘1</span></div><div class="terminal-body"><div class="terminal-location">~/projects/api-service <span>feature / v2</span></div><div class="agent-heading"><span class="agent-symbol">✳</span><strong id="api-heading">正在更新接口</strong></div><p class="agent-description" id="api-description">迁移逻辑已准备好，需要确认兼容策略。</p><div class="api-question"><div class="answer-option" id="api-answer"><span>1</span><div><b>保留 /v1，同时新增 /v2</b><small>让现有客户端继续正常使用</small></div><span class="answer-check">✓</span></div><div class="answer-option secondary"><span>2</span><div><b>直接替换为 /v2</b><small>同步更新调用方</small></div></div></div><div class="session-footer" id="api-footer">等待你的选择</div></div></article>
+              <article class="mac-window tests-window" id="tests-window"><div class="window-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>test-suite — DeepSeek Harness</span><span class="titlebar-trailing">⌘2</span></div><div class="terminal-body"><div class="terminal-location">~/projects/test-suite <span>regression</span></div><div class="agent-heading"><span class="agent-symbol">✳</span><strong id="tests-heading">回归测试运行中</strong></div><div class="test-count"><b id="tests-count">48</b><span> / 86 tests</span><span class="test-badge" id="tests-badge">RUNNING</span></div><div class="test-results"><p><span>✓</span> checkout / payment flow <b>32 passed</b></p><p><span>✓</span> api / backwards compatibility <b>28 passed</b></p><p><span>✓</span> retry / rollback <b>26 passed</b></p></div><div class="session-footer" id="tests-footer">正在检查剩余异常分支…</div></div></article>
               <article class="mac-window web-window" id="web-window"><div class="window-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>landing-page — Claude Code</span><span class="titlebar-trailing">⌘3</span></div><div class="terminal-body"><div class="terminal-location">~/projects/landing-page <span>design / home</span></div><div class="agent-heading"><span class="agent-symbol claude-symbol">✳</span><strong>继续打磨眼前的页面。</strong></div><div class="web-work"><div class="mini-site"><div class="mini-site-nav"><i></i><span></span><span></span></div><h3>Make room<br>for good work.</h3><b>Let’s go <span>↗</span></b><div class="mini-site-shape"></div></div><div class="web-notes"><p><span>✓</span> 页面结构已调整</p><p><span>✓</span> 按钮样式已统一</p><p class="web-note-active"><span>↳</span> 优化首屏排版</p></div></div><div class="web-input">› <span id="web-input-text">标题再简洁一点，让重点更突出。</span><i class="text-caret"></i></div></div></article>
             </div>
 
-            <div class="mac-toast" id="mac-toast"><span class="toast-app"><svg><use href="#i-terminal"/></svg></span><div><header><strong id="toast-title">Codex · 需要回复</strong><time>now</time></header><b id="toast-project">[api-service] 确认兼容策略</b><p id="toast-message">保留旧版接口，还是直接替换？</p></div></div>
+            <div class="mac-toast" id="mac-toast"><span class="toast-app"><svg><use href="#i-terminal"/></svg></span><div><header><strong id="toast-title">ChatGPT Codex · 需要回复</strong><time>now</time></header><b id="toast-project">[api-service] 确认兼容策略</b><p id="toast-message">保留旧版接口，还是直接替换？</p></div></div>
             <div class="pending-cancelled" id="pending-cancelled"><svg><use href="#i-check"/></svg>会话已继续 · 后续待发提醒取消</div>
             <div class="mac-dock"><span class="dock-finder"><i></i><b>⌣</b></span><span class="dock-terminal"><svg><use href="#i-terminal"/></svg></span><span class="dock-safari"><i></i></span><span class="dock-notes"><i></i></span><span class="dock-divider"></span><span class="dock-folder"></span></div>
             <div class="screen-dim" id="screen-dim"></div>
@@ -114,8 +113,8 @@
 
         <div class="phone" id="phone" aria-hidden="true"><div class="phone-buttons"></div><div class="phone-display"><div class="phone-status"><b id="phone-time">14:32</b><span>▰ <svg><use href="#i-wifi"/></svg><i></i></span></div><div class="dynamic-island"></div>
           <div class="phone-game" id="phone-game"><div class="game-heading"><span>HOP!</span><b>★ <span id="game-score">240</span></b></div><div class="game-cloud cloud-one"></div><div class="game-cloud cloud-two"></div><div class="game-sun"></div><div class="game-hill hill-back"></div><div class="game-hill hill-front"></div><div class="game-platform platform-one"></div><div class="game-platform platform-two"></div><div class="game-platform platform-three"></div><span class="game-coin coin-one">★</span><span class="game-coin coin-two">★</span><div class="game-character" id="game-character"><i></i><i></i><b></b><span></span></div><div class="game-ground"></div><div class="game-combo" id="game-combo">NICE!</div><div class="game-control"><span>‹</span><span>›</span><b>↑</b></div></div>
-          <div class="phone-banner" id="phone-banner"><span class="feishu-icon"><svg><use href="#i-feishu"/></svg></span><div><header><b>飞书</b><time>现在</time></header><strong>Codex · 任务完成</strong><p>结算模块重构与测试已完成</p></div></div>
-          <div class="phone-message" id="phone-message"><div class="message-appbar"><span>‹</span><b>Agent 通知</b><span>···</span></div><p class="message-timestamp">14:58</p><div class="message-sender"><span class="feishu-icon"><svg><use href="#i-feishu"/></svg></span><b>cc-notify-hooks <small>机器人</small></b></div><div class="feishu-card"><h3>Codex · 任务完成</h3><div class="message-card-body"><span class="message-project">checkout</span><p>结算模块重构完成。<br>兼容旧接口，86 项测试通过。</p><div class="message-result" id="message-result-1"><span>✓</span> 重构完成</div><div class="message-result" id="message-result-2"><span>✓</span> 测试通过</div><div class="message-result" id="message-result-3"><span>↗</span> 等你回电脑验收</div><div class="message-meta">事件 · Stop<br>Session · demo-che</div></div></div></div>
+          <div class="phone-banner" id="phone-banner"><span class="feishu-icon"><svg><use href="#i-feishu"/></svg></span><div><header><b>飞书</b><time>现在</time></header><strong>ChatGPT Codex · 任务完成</strong><p>结算模块重构与测试已完成</p></div></div>
+          <div class="phone-message" id="phone-message"><div class="message-appbar"><span>‹</span><b>Agent 通知</b><span>···</span></div><p class="message-timestamp">14:58</p><div class="message-sender"><span class="feishu-icon"><svg><use href="#i-feishu"/></svg></span><b>cc-notify-hooks <small>机器人</small></b></div><div class="feishu-card"><h3>ChatGPT Codex · 任务完成</h3><div class="message-card-body"><span class="message-project">checkout</span><p>结算模块重构完成。<br>兼容旧接口，86 项测试通过。</p><div class="message-result" id="message-result-1"><span>✓</span> 重构完成</div><div class="message-result" id="message-result-2"><span>✓</span> 测试通过</div><div class="message-result" id="message-result-3"><span>↗</span> 等你回电脑验收</div><div class="message-meta">事件 · Stop<br>Session · demo-che</div></div></div></div>
           <div class="phone-homebar"></div><div class="phone-tap" id="phone-tap"></div>
         </div></div>
 
@@ -126,18 +125,18 @@
       </section>
     </div>
 
-    <div class="rotate-message" id="rotate-message"><svg class="rotate-phone"><use href="#i-phone"/></svg><h2>把手机横过来，<br>一起看这支短片。</h2><p>为宽屏设计，横屏时自动继续。</p><a href="index.html">先回首页看看 <span>↗</span></a></div>
+    <div class="rotate-message" id="rotate-message"><svg class="rotate-phone"><use href="#i-phone"/></svg><h2>横过手机，<br>看看通知如何帮你。</h2><p>转为横屏后继续播放。</p><a href="index.html">先回首页看看 <span>↗</span></a></div>
 
     <footer class="player-controls" aria-label="播放器控制">
       <button class="icon-button" id="play-toggle" type="button" aria-label="暂停演示"><svg><use id="play-icon" href="#i-pause"/></svg></button>
       <button class="icon-button" id="replay" type="button" aria-label="从头重播"><svg><use href="#i-replay"/></svg></button>
       <span class="elapsed" id="elapsed">00:00 / 00:24</span>
       <label class="sr-only" for="timeline">演示进度</label><input class="timeline" id="timeline" type="range" min="0" max="24" value="0" step="0.05" aria-valuetext="长通知，0 秒，共 24 秒">
-      <span class="playback-state" id="playback-state">长通知 · 独立循环</span>
+      <span class="playback-state" id="playback-state">正在播放 · 长通知</span>
       <label class="theme-control" for="theme-select"><svg><use href="#i-theme"/></svg><span class="sr-only">外观主题</span><select id="theme-select" aria-label="外观主题"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label>
       <button class="icon-button" id="fullscreen" type="button" aria-label="进入全屏"><svg><use href="#i-expand"/></svg></button>
     </footer>
-    <p class="sr-only" id="scene-description">长通知短片：把复杂任务交给 Agent，离开电脑休息。电脑屏幕变暗，Agent 继续工作。手机游戏画面上出现飞书通知，打开后确认任务已完成，再回到电脑验收。</p>
+    <p class="sr-only" id="scene-description">长通知演示：把复杂任务交给 Agent，离开电脑休息。电脑屏幕变暗，Agent 继续工作。手机游戏画面上出现飞书通知，打开后确认任务已完成，再回到电脑验收。</p>
     <p class="sr-only" id="player-status" role="status" aria-live="polite"></p>
   </main>
 </body>

@@ -58,9 +58,9 @@
   --home-purple: #c0aafa;
   --home-toast-shadow: 0 6px 18px #0003, 0 1px 3px #0002;
 }
-.demo-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 19px; }
-.demo-heading h2 { font-size: 15px; line-height: 1.5; letter-spacing: -.02em; font-weight: 650; }
-.motion-toggle { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; flex-shrink: 0; padding: 7px 12px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); color: var(--muted); font-size: 10px; }
+.demo-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 20px; padding-bottom: 20px; }
+.demo-heading h2 { flex: 1 1 270px; min-width: 0; font-size: 21px; line-height: 1.5; letter-spacing: -.02em; font-weight: 650; }
+.motion-toggle { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; flex-shrink: 0; margin-left: auto; padding: 9px 13px; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); color: var(--muted); font-size: 14px; line-height: 1.5; }
 .motion-toggle:hover { color: var(--accent); border-color: var(--accent); }
 .motion-icon { position: relative; display: block; width: 10px; height: 12px; }
 .motion-icon::before { content: ""; position: absolute; left: 2px; top: 1px; width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 7px solid currentColor; }
@@ -74,18 +74,17 @@
 .art-orbit { position: absolute; z-index: -1; border-radius: 50%; }
 .orbit-long { width: 215px; height: 215px; top: -10px; left: 75px; background: var(--home-long-orbit); }
 .orbit-short { width: 210px; height: 210px; top: -6px; left: 94px; background: var(--home-short-orbit); }
-.notice-copy { position: relative; padding: 1px 30px 25px; }
-.notice-type { display: flex; align-items: center; gap: 12px; font-size: 10px; color: var(--muted); }
-.notice-type > span:first-child { color: var(--accent); font-size: 11px; font-weight: 750; letter-spacing: .08em; }
+.notice-copy { position: relative; min-width: 0; padding: 2px 30px 26px; }
+.notice-type { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 12px; font-size: 14px; line-height: 1.6; color: var(--muted); }
+.notice-type > span:first-child { flex-shrink: 0; color: var(--accent); font-size: 15px; font-weight: 750; letter-spacing: .04em; }
 .notice-short .notice-type > span:first-child { color: var(--home-purple); }
-.notice-copy h3 { margin-top: 8px; font-size: clamp(20px, 2vw, 25px); line-height: 1.4; letter-spacing: -.035em; font-weight: 750; }
-.notice-copy p { margin-top: 6px; font-size: 12px; line-height: 1.8; color: var(--muted); }
-.scene-link { display: inline-flex; align-items: center; gap: 9px; min-height: 29px; margin-top: 9px; font-size: 11px; font-weight: 650; color: var(--accent); text-decoration: none; }
+.notice-copy h3 { margin-top: 10px; font-size: clamp(24px, 2.1vw, 28px); line-height: 1.4; letter-spacing: -.035em; font-weight: 750; text-wrap: balance; }
+.notice-copy p { margin-top: 10px; font-size: var(--text-body); line-height: 1.8; color: var(--muted); }
+.scene-link { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 10px; font-size: 16px; line-height: 1.5; font-weight: 650; color: var(--accent); text-decoration: none; }
 .notice-short .scene-link { color: var(--home-purple); }
-.scene-play { font-size: 16px; line-height: 1; transition: transform .2s; }
+.scene-play { font-size: 20px; line-height: 1; transition: transform .2s; }
 .scene-link:hover .scene-play { transform: translate(2px, -2px); }
-.concept-note { margin: 14px 2px 0; font-size: 10px; color: var(--faint); }
-.home-demo .quiet-note { margin-top: 17px; }
+.home-demo .quiet-note { margin-top: 22px; }
 
 /* Familiar macOS proportions, window chrome, and a compact phone. */
 .mini-laptop { position: absolute; width: 70%; left: 4%; bottom: 28px; }
@@ -198,9 +197,9 @@
 @media (max-width: 1100px) {
   .notice-art { margin-inline: 12px; height: 209px; }
   .long-scene, .short-scene { height: 209px; }
-  .notice-copy { padding-inline: 23px; }
-  .notice-copy h3 { font-size: 21px; }
-  .notice-copy p { font-size: 11px; }
+  .notice-copy { padding-inline: 24px; }
+  .notice-copy h3 { font-size: 24px; }
+  .notice-copy p { font-size: 16px; }
   .phone-toast { right: 1px; }
   .laptop-window .mini-terminal { padding: 6px 8px; gap: 4px; font-size: 6px; }
   .laptop-window .terminal-line:nth-child(4) { display: none; }
@@ -210,35 +209,27 @@
   .notice-pair { gap: 14px; }
   .notice-art { height: 184px; margin-top: 12px; }
   .long-scene, .short-scene { width: 355px; height: 209px; transform: translateX(-50%) scale(.86); transform-origin: top center; }
-  .notice-copy { padding-inline: 19px; padding-bottom: 20px; }
-  .notice-copy h3 { font-size: 18px; }
-  .notice-type { gap: 8px; font-size: 9px; }
-  .notice-type > span:first-child { font-size: 10px; }
+  .notice-copy { padding-inline: 20px; padding-bottom: 24px; }
+  .notice-copy h3 { font-size: 22px; }
 }
 @media (max-width: 760px) {
-  .demo-heading { align-items: flex-start; gap: 13px; padding-bottom: 15px; }
-  .demo-heading h2 { max-width: 230px; font-size: 14px; }
-  .motion-toggle { min-height: 32px; padding: 6px 10px; font-size: 9px; }
-  .notice-pair { grid-template-columns: 1fr; gap: 16px; }
+  .demo-heading { gap: 12px 16px; padding-bottom: 18px; }
+  .demo-heading h2 { flex-basis: 240px; font-size: 20px; }
+  .notice-pair { grid-template-columns: minmax(0, 1fr); gap: 18px; }
   .notice-card { border-radius: 21px; }
   .notice-art { height: 216px; margin: 13px 17px 0; }
   .long-scene, .short-scene { height: 218px; }
-  .notice-copy { padding: 0 24px 23px; }
-  .notice-copy h3 { font-size: 23px; }
-  .notice-copy p { font-size: 12px; }
-  .concept-note { font-size: 9px; line-height: 1.8; }
+  .notice-copy { padding: 2px 24px 24px; }
+  .notice-copy h3 { font-size: 25px; }
 }
 @media (max-width: 380px) {
-  .demo-heading h2 { font-size: 12px; }
+  .demo-heading h2 { font-size: 19px; }
   .notice-art { height: 195px; margin-inline: 9px; }
   .long-scene, .short-scene { width: 330px; height: 218px; transform: translateX(-50%) scale(.88); transform-origin: top center; }
   .notice-copy { padding-inline: 20px; }
-  .notice-copy h3 { font-size: 21px; }
-  .notice-copy p { font-size: 11px; }
+  .notice-copy h3 { font-size: 22px; }
 }
 @media (max-width: 350px) {
   .notice-art { height: 177px; }
   .long-scene, .short-scene { transform: translateX(-50%) scale(.78); }
-  .notice-copy h3 { font-size: 19px; }
-  .notice-copy p { font-size: 10px; }
 }

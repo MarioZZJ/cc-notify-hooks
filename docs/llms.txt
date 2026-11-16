@@ -1,0 +1,159 @@
+# cc-notify-hooks
+
+> 为 Claude Code、ChatGPT Codex、DeepSeek Harness 与 Magpie 接入桌面和手机通知。多个会话并行时及时提醒，离开电脑后通过消息渠道带回结果。本文供获得用户安装指令的 Agent 使用，包含安装、配置与不发送通知的检查步骤。
+
+- 项目主页：https://mariozzj.github.io/cc-notify-hooks/
+- 源码仓库：https://github.com/MarioZZJ/cc-notify-hooks
+- Git 地址：https://github.com/MarioZZJ/cc-notify-hooks.git
+- 本指南：https://mariozzj.github.io/cc-notify-hooks/llms.txt
+
+## 完整文档
+
+- [安装指南（原始文本）](https://raw.githubusercontent.com/MarioZZJ/cc-notify-hooks/main/docs/getting-started.md)：安装、更新、迁移、其他安装方式与卸载。
+- [配置指南（原始文本）](https://raw.githubusercontent.com/MarioZZJ/cc-notify-hooks/main/docs/configuration.md)：配置路径、渠道凭据、延迟、事件与取消条件。
+- [兼容性说明（原始文本）](https://raw.githubusercontent.com/MarioZZJ/cc-notify-hooks/main/docs/compatibility.md)：宿主版本、事件边界与插件分发限制。
+- [配置模板（原始 JSON）](https://raw.githubusercontent.com/MarioZZJ/cc-notify-hooks/main/plugins/cc-notify-hooks/config/notify.example.json)：新建配置时使用；不要覆盖已有配置。
+
+## 先确定实际安装环境
+
+1. 优先使用用户已说明的目标；否则结合当前宿主、可用命令、版本、已有插件注册与配置识别目标。可只读检查 command -v claude codex dsh magpie、对应版本与插件列表。不要把发现多个可执行文件当成安装全部入口的指令；确实无法区分目标或 profile 时，再询问用户。
+2. 安装发生在实际执行 Agent hooks 的环境。ChatGPT Codex 需要支持本地插件与 hooks 的运行环境；普通聊天页面、不能访问本机的远程沙箱并不自动具备此能力。远程主机上的 macOS 通知不会显示到用户另一台电脑，应配置该环境可访问的手机或消息渠道。
+3. 检查 Bash、jq、curl；从 Git 克隆时还需 git。macOS 原生通知依赖 osascript。缺少依赖时，按实际操作系统与既有包管理器补齐所需依赖，不顺带升级无关软件。
+4. 先检查是否已经安装。更新既有入口，避免 marketplace 插件、独立 hooks 与网关插件重复注册。原生入口与 Magpie 同时启用会分别通知，只有用户确实需要两个层次时才并用。
+5. 修改前备份受影响的配置，保留已有 hooks、其他插件、渠道凭据、事件订阅与自定义 stateDir；只合并本插件需要的字段。不得用模板替换整个 settings.json、hooks.json、config.toml 或 notify.json。
+
+## 安装 Claude Code
+
+Claude Code 2.1.275 及以上支持下面的一步安装。在 Claude Code 会话中执行，不要把斜杠命令当作 shell 命令：
+
+```text
+/plugin install cc-notify-hooks --marketplace MarioZZJ/cc-notify-hooks
+/reload-plugins
+/cc-notify-hooks:config
+```
+
+插件名为 cc-notify-hooks。配置向导用于选择渠道与延迟；真实凭据按下文要求在本地填写。插件模式安装或更新后刷新插件；若宿主未加载更新，启动新会话。旧版本的分步安装、独立安装与迁移参见完整安装指南，不要同时注册两种入口。
+
+## 安装 ChatGPT Codex
+
+在具备本地插件支持的运行环境中执行：
+
+```bash
+codex plugin marketplace add MarioZZJ/cc-notify-hooks
+codex plugin add cc-notify-hooks@cc-notify-hooks
+```
+
+启动新会话，在 /hooks 中审阅并信任 hooks；桌面端入口为 Settings > Hooks。随后使用插件的 config 技能或安装后的 setup 入口配置通知。
+
+仓库兼容性基准为命令行 0.169.0，该版本默认开启 hooks。若用户此前关闭过，在 ${CODEX_HOME:-~/.codex}/config.toml 的现有 [features] 表内恢复 hooks = true；合并配置，不重复创建同名表。正式键名是 hooks，不要新增已弃用的 codex_hooks 别名。
+
+插件脚本升级后也需要重新审阅，即使命令文本没有变化。保留宿主的信任审阅流程，并在安装结果中明确仍需完成的审阅或刷新步骤。
+
+## 安装 DeepSeek Harness
+
+展示名称使用 DeepSeek Harness；实际命令为 dsh，包名为 dsh-notify-hooks。使用 0.2.2-rc.3 或更新的兼容版本。先选择需要长期保留的目录；若已有本仓库，检查并复用，避免覆盖用户改动。
+
+```bash
+git clone https://github.com/MarioZZJ/cc-notify-hooks.git
+cd cc-notify-hooks
+bash install.sh dsh web
+```
+
+web 是 CLI profile。桌面版必须使用桌面版附带的 dsh 命令，且 desktop profile 已初始化，再执行：
+
+```bash
+bash install.sh dsh desktop
+```
+
+只安装选定的 profile。普通 npm CLI 不能管理 desktop profile；未启用 HMR 时重启对应宿主。安装器使用原生插件管理器，并兼容旧 home 级 cc-notify-hooks 条目；不要再手工加一份重复的 Cordis 注册。
+
+默认配置为 ${DSH_HOME:-~/.dsh}/cc-notify-hooks/notify.json。已有插件 configFile/configPath、CC_NOTIFY_CONFIG 或 stateDir 设置应继续使用。本地注册引用仓库目录，安装后不要删除该目录。
+
+## 安装 Magpie
+
+包名为 agent-notify-hooks，建议使用 0.1.4174 或更新的兼容版本。选择长期保留的目录，已有仓库则检查并复用：
+
+```bash
+git clone https://github.com/MarioZZJ/cc-notify-hooks.git
+cd cc-notify-hooks
+bash install.sh magpie
+```
+
+安装器注册仓库根包，设置 configPath 与 gatewayTimeoutMs: 3000；默认通知配置为 ~/.config/cc-notify-hooks/notify.json。已有 configPath、CC_NOTIFY_CONFIG 或 stateDir 应保持一致。本地安装后保留仓库目录。
+
+如果已有入口，优先按宿主流程更新并保留插件选项；确需重新运行安装器且使用自定义配置时，将已核实的原路径通过本次命令的 CC_NOTIFY_CONFIG 传入，避免把 configPath 改回默认位置。不要清空已有 stateDir 等其他选项。
+
+Magpie 观察经过网关的模型响应与请求错误，不能把一次模型响应称为整个 Agent 任务完成。权限等待、结构化提问与原生回合结束需要对应 Agent 的原生入口。远程包安装与自定义路径选项见完整安装指南。
+
+## 找到并保留正确的配置文件
+
+优先遵循安装器或插件选项已绑定的路径。通用发送脚本按以下顺序查找存在的文件，只检查已定义且非空的环境变量：
+
+1. CC_NOTIFY_CONFIG 指定的文件。
+2. ${PLUGIN_DATA}/notify.json（ChatGPT Codex 等宿主的插件数据目录）。
+3. ${CLAUDE_PLUGIN_DATA}/notify.json（Claude Code 插件数据目录）。
+4. ~/.config/cc-notify-hooks/notify.json。
+5. ${CODEX_HOME:-~/.codex}/cc-notify-hooks/notify.json。
+6. ${REASONIX_HOME:-~/.reasonix}/cc-notify-hooks/notify.json（历史兼容路径）。
+7. ${DSH_HOME:-~/.dsh}/cc-notify-hooks/notify.json。
+8. ~/.claude/hooks/notify.json。
+
+已有配置写回原路径；新建配置优先使用明确指定的路径或当前宿主提供的插件数据目录。Claude Code 独立安装使用 ~/.claude/hooks/notify.json，ChatGPT Codex 独立安装使用 ${CODEX_HOME:-~/.codex}/cc-notify-hooks/notify.json。不要猜测缓存版本路径，也不要将凭据写进插件安装缓存或仓库。
+
+仅在配置不存在时从模板创建，使用仅当前用户可读写的权限，例如 0600。DeepSeek Harness 与 Magpie 的安装器只在文件不存在时创建配置；配置文件和自定义目录仍应按实际权限检查。
+
+## 配置通知、完成提醒与手机渠道
+
+模板默认只启用 macOS，延迟 3 秒，events 为 ["notification"]；其他渠道默认关闭。非 macOS 环境不能依赖该默认渠道收到通知，需要配置一个可用的远程渠道。
+
+- notification：等待确认、结构化提问、异常，以及 Magpie 的网关响应与错误。
+- stop：Claude Code、ChatGPT Codex、DeepSeek Harness 的原生正常回合结束。需要完成提醒时，在所选渠道的 events 中保留原订阅并加入 stop。
+- 每个渠道的 delay 单位是秒，从插件收到对应事件开始计时，宿主自身的事件等待时间另计。长通知不会根据任务已经运行多久自动触发。
+- 默认延迟：macOS 3 秒；Telegram 5 秒；Bark、Pushover、ntfy、Gotify 15 秒；企业微信、飞书、钉钉、Slack、Discord 300 秒。每个渠道可分别调整。
+
+例如，要配置“桌面等待与完成提醒 + 飞书完成提醒”，合并以下渠道字段，保留文件中其他内容。macos 仅用于实际运行脚本的 Mac；飞书保持关闭，待用户在本地填写有效 webhook 后再改为 enabled: true：
+
+```json
+{
+  "channels": {
+    "macos": {
+      "enabled": true,
+      "delay": 3,
+      "events": ["notification", "stop"]
+    },
+    "feishu": {
+      "enabled": false,
+      "delay": 300,
+      "events": ["stop"],
+      "format": "card",
+      "webhook": ""
+    }
+  }
+}
+```
+
+这是合并示例，不是替换整份配置的指令；已有 events 应合并而非删除。若用户也要飞书接收等待确认或异常，加入 notification；Magpie 的结果通知必须使用 notification。
+
+凭据由用户在本地编辑器或宿主提供的安全输入界面填写；也可使用用户已授权的本地凭据。不要要求在聊天中粘贴 token、Webhook 或完整配置，不回显这些值，不把它们放进命令历史、报告、截图或 Git。只报告配置是否有效、哪些渠道已启用与仍缺少哪些字段。
+
+收到宿主的新输入、提问结束等后续活动信号后，该会话尚未发送的提醒会取消；已经发出的消息保留，其他会话不受影响。查看通知本身不会取消队列。通知提供项目与上下文，返回会话由用户完成；没有会话直达链接或手机远程审批。
+
+## 检查与交付
+
+默认只做不发送通知的检查：依赖可用、插件已注册、hooks 配置可解析且保留原处理器、实际配置路径正确、JSON 结构有效、所选渠道字段齐全。检查配置时只输出路径或非敏感的状态，不打印完整 JSON。可用 jq 检查结构并丢弃输出，例如：
+
+```bash
+jq -e 'type == "object" and (.channels | type == "object")' "$notify_config_path" >/dev/null
+```
+
+notify_config_path 必须先设为已核实的配置文件绝对路径。只读检查通过不等于消息已送达，也不等于用户已经信任 hooks。
+
+不要自动运行不带参数的 test_notify.sh、test_notify.sh all 或模拟 hook 的发送测试；它们可能向真实渠道推送消息。只有用户明确要求测试某个渠道时，才对该渠道执行测试。例如已获准测试飞书且确认已启用时：
+
+```bash
+CC_NOTIFY_CONFIG="$notify_config_path" bash "$notify_plugin_dir/test_notify.sh" feishu >/dev/null 2>&1
+```
+
+notify_plugin_dir 指向实际包含 test_notify.sh 的插件目录。单渠道测试脚本会打印部分凭据，必须抑制原始输出；不要将输出带入对话或日志。脚本退出或显示成功不能证明平台实际收到消息，需要用户确认收件。
+
+最后报告：安装到哪个宿主/profile、采用哪种入口、配置文件路径、已启用的渠道与事件、只读检查结果，以及仍需用户完成的本地凭据填写、刷新/重启或 hooks 信任。未发送真实测试时明确说明，不将待完成步骤写成已经成功。

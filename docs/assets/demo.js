@@ -3,7 +3,6 @@
 
   // Everything is derived from one local clock, so pause and seeking freeze the
   // camera, character, game, cursor and notifications at exactly the same frame.
-  const $ = (id) => document.getElementById(id);
   const sceneButtons = [...document.querySelectorAll('[data-select-scene]')];
   const themeMedia = matchMedia('(prefers-color-scheme: dark)');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -14,8 +13,8 @@
   const durations = { long: 24, short: 14 };
   const titles = { long: '长通知', short: '短通知' };
   const descriptions = {
-    long: '长通知短片：把复杂任务交给 Agent，离开电脑休息。电脑屏幕变暗，Agent 继续工作。手机游戏画面上出现飞书通知，打开后确认任务已完成，再回到电脑验收。',
-    short: '短通知短片：三个独立的 Agent 窗口同时工作。右上角出现 macOS 通知，用户选择对应窗口的标题栏，回复问题，再切回继续工作。第二条通知到来后，切到测试窗口检查结果。'
+    long: '长通知演示：把复杂任务交给 Agent，离开电脑休息。电脑屏幕变暗，Agent 继续工作。手机游戏画面上出现飞书通知，打开后确认任务已完成，再回到电脑验收。',
+    short: '短通知演示：三个独立的 Agent 窗口同时工作。右上角出现 macOS 通知，用户选择对应窗口的标题栏，回复问题，再切回继续工作。第二条通知到来后，切到测试窗口检查结果。'
   };
   const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
   const mix = (a, b, amount) => a + (b - a) * amount;
@@ -77,21 +76,21 @@
 
   const longShots = [
     { at: 0, id: 'mission', eyebrow: '长通知 / 01 · 交给 AGENT', title: '这个任务，\n有点难。', subtitle: '重构、回归测试、兼容性检查。', caption: '长任务交给 Agent，注意力还给自己。', copy: [88, 245, 1, 1, 0], width: 440 },
-    { at: 2.8, id: 'busy', eyebrow: '长通知 / 02 · 放心离开', title: '它继续忙。\n你先歇一会。', subtitle: '屏幕暗下来，工作还在继续。', caption: '时间快进 · Agent 仍在推进任务', copy: [88, 245, 0.93, 1, 0], width: 430 },
+    { at: 2.8, id: 'busy', eyebrow: '长通知 / 02 · 放心离开', title: '它继续忙。\n你先歇一会。', subtitle: '屏幕暗下来，工作还在继续。', caption: '你离开电脑，Agent 继续推进任务。', copy: [88, 245, 0.93, 1, 0], width: 430 },
     { at: 5.7, id: 'break', eyebrow: '长通知 / 03 · 把时间还给你', title: '喝杯咖啡。\n再玩一小局。', subtitle: '', caption: '电脑还在工作，你可以做点别的。', copy: [105, 104, 0.9, 1, 0], width: 680 },
-    { at: 10.5, id: 'alert', eyebrow: '长通知 / 04 · 消息来了', title: '叮，\n是 Agent。', subtitle: '任务完成，手机上的提醒找到你。', caption: '已启用飞书，并订阅 stop 事件 · 延迟按配置触发', copy: [105, 225, 1, 1, 0], width: 600 },
+    { at: 10.5, id: 'alert', eyebrow: '长通知 / 04 · 消息来了', title: '叮，\n是 Agent。', subtitle: '任务完成，手机上的提醒找到你。', caption: '飞书已开启完成提醒，按设定延迟送达。', copy: [105, 225, 1, 1, 0], width: 600 },
     { at: 14.1, id: 'message', eyebrow: '长通知 / 05 · 打开看看', title: '难的部分，\n已经做完了。', subtitle: '重构完成，测试通过。等你验收。', caption: '打开飞书，先看清 Agent 的结果摘要。', copy: [105, 250, 0.94, 1, 0], width: 640 },
     { at: 18.1, id: 'return', eyebrow: '长通知 / 06 · 回到电脑', title: '回来，\n刚好验收。', subtitle: '打开变更，检查结果。', caption: '回到电脑，继续对应会话。', copy: [88, 260, 0.93, 1, 0], width: 410 },
-    { at: 22.2, id: 'complete', eyebrow: '长通知 / 让等待有个回音', title: '放心离开，\n及时回来。', subtitle: 'cc-notify-hooks', caption: '长通知 · 这一支短片将独立循环', copy: [88, 260, 0.93, 1, 0], width: 440 }
+    { at: 22.2, id: 'complete', eyebrow: '长通知 / 让等待有个回音', title: '放心离开，\n及时回来。', subtitle: 'cc-notify-hooks', caption: '离开电脑，也不会错过结果。', copy: [88, 260, 0.93, 1, 0], width: 440 }
   ];
   const shortShots = [
-    { at: 0, id: 'parallel', eyebrow: '短通知 / 01 · 多窗口并行', title: '多开几窗，也能专心做事。', subtitle: 'Claude Code、Codex、dsh，各自推进。', caption: '三个独立窗口，三个独立会话。' },
-    { at: 2.4, id: 'notify-api', eyebrow: '短通知 / 02 · 及时提醒', title: '哪个会话需要你，一眼就知道。', subtitle: 'macOS 通知出现在屏幕右上角。', caption: 'Codex 需要确认接口兼容策略。' },
+    { at: 0, id: 'parallel', eyebrow: '短通知 / 01 · 多窗口并行', title: '多开几窗，也能专心做事。', subtitle: 'Claude Code、ChatGPT Codex、DeepSeek Harness，各自推进。', caption: '三个独立窗口，三个独立会话。' },
+    { at: 2.4, id: 'notify-api', eyebrow: '短通知 / 02 · 及时提醒', title: '哪个会话需要你，一眼就知道。', subtitle: 'macOS 通知出现在屏幕右上角。', caption: 'ChatGPT Codex 需要确认接口兼容策略。' },
     { at: 4.3, id: 'focus-api', eyebrow: '短通知 / 03 · 切回对应窗口', title: '切回来，答一句。', subtitle: '选择对应窗口，Agent 就能继续。', caption: '手动选择窗口标题栏，继续这段会话。' },
-    { at: 6.7, id: 'continue', eyebrow: '短通知 / 04 · 各自继续', title: '回复完，继续眼前的事。', subtitle: '宿主报告会话继续后，后续待发提醒取消。', caption: '已发出的消息保留，取消的是尚未发送的提醒。' },
-    { at: 8.2, id: 'notify-tests', eyebrow: '短通知 / 05 · 另一个好消息', title: '测试好了，也会告诉你。', subtitle: '不必在几个窗口之间反复查看。', caption: 'dsh 的回合已结束，86 项测试通过。' },
+    { at: 6.7, id: 'continue', eyebrow: '短通知 / 04 · 各自继续', title: '回复完，继续眼前的事。', subtitle: '回复这一句，继续手头的工作。', caption: '会话继续后，取消尚未发出的提醒。' },
+    { at: 8.2, id: 'notify-tests', eyebrow: '短通知 / 05 · 另一个好消息', title: '测试好了，也会告诉你。', subtitle: '不必在几个窗口之间反复查看。', caption: 'DeepSeek Harness 的回合已结束，86 项测试通过。' },
     { at: 9.7, id: 'focus-tests', eyebrow: '短通知 / 06 · 轮到你验收', title: '切到结果，接着往前。', subtitle: '窗口之间轻轻一换，注意力就位。', caption: '选择 test-suite 窗口，检查测试结果。' },
-    { at: 12.2, id: 'short-complete', eyebrow: '短通知 / 让并行更从容', title: '你专注，通知负责提醒。', subtitle: 'cc-notify-hooks', caption: '短通知 · 这一支短片将独立循环' }
+    { at: 12.2, id: 'short-complete', eyebrow: '短通知 / 让并行更从容', title: '你专注，通知负责提醒。', subtitle: 'cc-notify-hooks', caption: '多线推进，需要你时再切回来。' }
   ];
 
   function applyShot(shots, at) {
@@ -267,7 +266,7 @@
     const toast = Math.max(firstToast, secondToast);
     opacity('mac-toast', toast);
     nodes['mac-toast'].style.transform = 'translateX(' + ((1 - toast) * 365).toFixed(1) + 'px)';
-    text('toast-title', at >= 8 ? 'dsh · 任务完成' : 'Codex · 需要回复');
+    text('toast-title', at >= 8 ? 'DeepSeek Harness · 任务完成' : 'ChatGPT Codex · 需要回复');
     text('toast-project', at >= 8 ? '[test-suite] 回归测试已完成' : '[api-service] 确认兼容策略');
     text('toast-message', at >= 8 ? '86 项测试通过，等你检查结果。' : '保留旧版接口，还是直接替换？');
     opacity('pending-cancelled', windowAt(at, 5.9, 7.8, 0.3));
@@ -302,7 +301,7 @@
     text('elapsed', formatTime(time) + ' / ' + formatTime(durations[scene]));
     nodes['play-toggle'].setAttribute('aria-label', playing ? '暂停演示' : '播放演示');
     nodes['play-icon'].setAttribute('href', playing ? '#i-pause' : '#i-play');
-    text('playback-state', playing ? titles[scene] + ' · 独立循环' : '已暂停 · ' + titles[scene]);
+    text('playback-state', playing ? '正在播放 · ' + titles[scene] : '已暂停 · ' + titles[scene]);
   }
 
   function render() {
@@ -334,7 +333,7 @@
     playing = !playing;
     if (playing && time >= durations[scene]) time = 0;
     synchronizePlayback();
-    announce(playing ? '正在播放' + titles[scene] + '短片' : '演示已暂停');
+    announce(playing ? '正在播放' + titles[scene] + '演示' : '演示已暂停');
   }
 
   function selectScene(next, fromUser = false) {
@@ -348,7 +347,7 @@
       url.searchParams.delete('t');
       url.searchParams.delete('paused');
       history.replaceState(null, '', url);
-      announce('已切换到' + titles[scene] + '独立短片');
+      announce('已切换到' + titles[scene] + '演示');
     }
     sceneButtons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.selectScene === scene)));
     nodes.film.setAttribute('aria-label', titles[scene] + '场景动画');
@@ -383,7 +382,7 @@
     if (reducedMotion.matches) { playing = false; synchronizePlayback(); announce('已按系统的减少动态效果设置暂停'); }
   });
   nodes['play-toggle'].addEventListener('click', togglePlay);
-  nodes.replay.addEventListener('click', () => { time = 0; currentShot = ''; playing = true; render(); synchronizePlayback(); announce('从头播放' + titles[scene] + '短片'); });
+  nodes.replay.addEventListener('click', () => { time = 0; currentShot = ''; playing = true; render(); synchronizePlayback(); announce('从头播放' + titles[scene] + '演示'); });
   sceneButtons.forEach((button) => button.addEventListener('click', () => selectScene(button.dataset.selectScene, true)));
   nodes.timeline.addEventListener('pointerdown', () => { scrubbing = true; synchronizePlayback(); });
   window.addEventListener('pointerup', () => { if (scrubbing) { scrubbing = false; synchronizePlayback(); } });
@@ -393,8 +392,8 @@
     try {
       if (document.fullscreenElement) await document.exitFullscreen();
       else if (nodes.player.requestFullscreen) await nodes.player.requestFullscreen();
-      else announce('当前浏览器不支持全屏，短片已铺满页面。');
-    } catch { announce('浏览器未进入全屏，短片仍可在当前页面播放。'); }
+      else announce('当前浏览器不支持全屏，演示已铺满页面。');
+    } catch { announce('浏览器未进入全屏，演示仍可在当前页面播放。'); }
   });
   document.addEventListener('fullscreenchange', () => { nodes.fullscreen.setAttribute('aria-label', document.fullscreenElement ? '退出全屏' : '进入全屏'); resize(); });
   document.addEventListener('visibilitychange', synchronizePlayback);

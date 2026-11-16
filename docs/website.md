@@ -7,6 +7,8 @@ GitHub Pages 继续使用 `docs/`，无需构建步骤或外部运行依赖。
 - `assets/site.css` / `assets/site.js`：首页样式、主题、安装标签和复制命令。
 - `assets/home-demo.css` / `assets/home-demo.js`：首页两张通知概念卡片的画面与播放行为。
 - `assets/demo.css` / `assets/demo.js`：完整演示的场景、时间轴和播放控制。
+- `llms.txt`：面向安装 Agent 的纯文本指南，官网和 README 的安装提示词共同引用。
+- `assets/readme-hero-light.svg` / `assets/readme-hero-dark.svg`：README 的自适应主题头图，与官网共用品牌配色。
 - `dsh-index.json`：现有插件索引，网页改版不改变此地址或内容。
 
 ## 本地预览
@@ -70,7 +72,7 @@ python3 -m http.server 8000
 - 长通知的默认 5 分钟延迟从插件收到宿主事件开始计算，与任务已经运行多久无关。人物离席、任务完成和消息送达应是可区分的步骤。
 - 后续输入等宿主活动会清除对应会话尚未发送的提醒；已送达消息保留，其他会话继续独立排队。看到通知本身不构成取消信号。
 - 手机通知卡片使用示例内容。维护字段时应核对 `scripts/notify.sh` 和 `scripts/channels/feishu.sh`，不要把 Agent 名称误写成实际执行工具名，或补入插件没有提供的会话链接。
-- Claude Code、Codex CLI 与 dsh 提供原生宿主事件；Magpie 观察网关请求与响应。演示的任务验收使用原生 Agent 场景，Magpie 的模型响应结束不能直接表示整个 Agent 任务结束。
+- Claude Code、ChatGPT Codex 与 DeepSeek Harness 提供原生宿主事件；Magpie 观察网关请求与响应。演示的任务验收使用原生 Agent 场景，Magpie 的模型响应结束不能直接表示整个 Agent 任务结束。
 - 网页示例中的手机渠道需由用户实际启用并配置凭据。渠道延迟、事件筛选与安装命令以仓库实现和兼容性文档为准。
 
 ## 修改后的检查重点
