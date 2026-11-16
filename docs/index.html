@@ -3,322 +3,91 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light">
-  <meta name="theme-color" content="#f7f7f2">
-  <link rel="icon" type="image/jpeg" href="assets/dsh-icon.jpg">
-  <title>cc-notify-hooks · Claude Code、Codex CLI、dsh 与 Magpie 分级通知</title>
-  <meta name="description" content="为 Claude Code、Codex CLI、DeepSeek Harness（dsh）和 Magpie 提供 11 渠道分级通知。独立设置推送延迟，收到响应后取消待发提醒。查看四种工具的安装命令、通知演示与兼容性说明。">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f8f7f4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17191c" media="(prefers-color-scheme: dark)">
+  <title>cc-notify-hooks · Agent 继续跑，你不必一直等</title>
+  <meta name="description" content="为 Claude Code、Codex CLI、dsh 与 Magpie 接入分级通知。多会话并行时，桌面通知提醒你切回；长任务结束后，手机消息提醒你回电脑验收。观看场景演示，选择工具安装。">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="zh_CN">
+  <meta property="og:title" content="cc-notify-hooks · Agent 继续跑，你不必一直等">
+  <meta property="og:description" content="桌面上的及时提醒，离开电脑后的手机消息。为你的 Agent 工作流接入 11 渠道分级通知。">
   <meta property="og:image" content="https://mariozzj.github.io/cc-notify-hooks/assets/icon.png">
-  <meta property="og:title" content="cc-notify-hooks · 四种工具，11 渠道分级通知">
-  <meta property="og:description" content="Claude Code、Codex CLI、dsh 与 Magpie 的通知入口。先用秒级提醒，再用分钟级消息；收到响应信号后，取消对应待发通知。">
-  <style>
-    :root {
-      --paper: #f7f7f2;
-      --surface: #ffffff;
-      --ink: #1c3035;
-      --muted: #57696c;
-      --accent: #146b7a;
-      --accent-dark: #0f5360;
-      --tint: #eaf2f2;
-      --line: #d8e0dc;
-      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-    }
-    *, *::before, *::after { box-sizing: border-box; }
-    html { scroll-behavior: smooth; scroll-padding-top: 2rem; }
-    body { margin: 0; background: var(--paper); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; line-height: 1.7; -webkit-font-smoothing: antialiased; }
-    h1, h2, h3, p, ul, ol, dl, pre, figure { margin: 0; }
-    h1, h2, h3 { line-height: 1.3; }
-    a { color: var(--accent); text-underline-offset: .22em; }
-    a:hover { color: var(--accent-dark); }
-    button, textarea { font: inherit; }
-    button { cursor: pointer; }
-    button:disabled { cursor: default; opacity: .5; }
-    button, a { -webkit-tap-highlight-color: transparent; }
-    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
-    [hidden] { display: none !important; }
-    ::selection { background: #cce4e8; color: var(--ink); }
-    code { font-family: var(--mono); font-size: .9em; overflow-wrap: anywhere; }
-    p code, li code, dd code { background: var(--tint); border-radius: 4px; padding: .1em .3em; }
-    .wrap { width: min(1120px, calc(100% - 64px)); margin-inline: auto; }
-    .skip-link { position: absolute; z-index: 10; top: 12px; left: 16px; padding: .7rem 1rem; background: var(--surface); transform: translateY(-180%); }
-    .skip-link:focus { transform: translateY(0); }
-    .site-header { border-bottom: 1px solid var(--line); }
-    .header-inner { min-height: 84px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-    .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-size: 17px; font-weight: 750; letter-spacing: -.4px; white-space: nowrap; }
-    .bell-mark { display: block; width: 34px; height: 34px; color: var(--accent); flex-shrink: 0; }
-    .nav { display: flex; align-items: center; gap: 28px; }
-    .nav a { color: var(--muted); text-decoration: none; font-size: 14px; padding-block: 10px; }
-    .nav a:hover { color: var(--accent); }
-    .nav .source-link { color: var(--ink); }
-    .arrow { display: inline-block; margin-left: 5px; }
-    .hero { display: grid; grid-template-columns: 1.04fr 1fr; gap: 64px; align-items: center; padding-block: 76px 72px; }
-    .eyebrow { display: flex; align-items: center; gap: 9px; color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: .08em; margin-bottom: 22px; }
-    .eyebrow::before { content: ""; width: 22px; height: 2px; background: currentColor; }
-    h1 { font-size: clamp(38px, 4.5vw, 58px); letter-spacing: -.045em; font-weight: 760; line-height: 1.22; }
-    h1 span { color: var(--accent); }
-    .hero-description { font-size: 17px; color: var(--muted); max-width: 440px; margin-top: 24px; line-height: 1.85; }
-    .host-line { margin-top: 20px; color: var(--ink); font-size: 13px; font-weight: 600; word-spacing: .15em; }
-    .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 30px; }
-    .button { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 44px; padding: 10px 18px; border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; transition: background-color .15s, border-color .15s; }
-    .button:hover:not(:disabled) { background: var(--tint); border-color: var(--accent); color: var(--accent-dark); }
-    .button.primary { background: var(--accent); color: white; border-color: var(--accent); }
-    .button.primary:hover:not(:disabled) { background: var(--accent-dark); border-color: var(--accent-dark); color: white; }
-    .hero-facts { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 33px; color: var(--muted); font-size: 12px; }
-    .hero-facts strong { color: var(--ink); font-size: 18px; font-weight: 650; margin-right: 5px; }
-    .demo { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 16px 40px -24px #1c303540; overflow: hidden; }
-    .demo-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 22px; border-bottom: 1px solid var(--line); }
-    .demo-top h2 { font-size: 14px; font-weight: 650; }
-    .tag { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); background: var(--tint); padding: 3px 9px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; }
-    .demo-body { padding: 22px; }
-    .notification { display: flex; align-items: flex-start; gap: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 15px; }
-    .notification .bell-mark { width: 32px; height: 32px; margin-top: 2px; }
-    .notification small { display: block; font-size: 10px; color: var(--muted); margin-bottom: 3px; letter-spacing: .04em; }
-    .notification h3 { font-size: 15px; margin-bottom: 5px; }
-    .notification p { font-size: 12px; color: var(--muted); line-height: 1.65; }
-    .queue-heading { display: flex; justify-content: space-between; gap: 12px; margin: 22px 0 8px; color: var(--muted); font-size: 11px; }
-    .queue-heading span:last-child { font-family: var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
-    .queue { list-style: none; padding: 0; }
-    .queue li { display: grid; grid-template-columns: 18px 1fr 55px 60px; gap: 9px; align-items: center; min-height: 42px; border-bottom: 1px solid #edf0ed; font-size: 13px; }
-    .queue .queue-marker { width: 14px; height: 14px; border: 1px solid #9aa9aa; border-radius: 50%; color: white; font-size: 10px; display: grid; place-items: center; line-height: 1; }
-    .queue-time { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-    .queue-state { justify-self: end; color: var(--muted); font-size: 11px; }
-    .queue li[data-state="pending"] .queue-marker { border-color: var(--accent); background: var(--tint); }
-    .queue li[data-state="sent"] .queue-marker { border-color: var(--accent); background: var(--accent); }
-    .queue li[data-state="sent"] .queue-marker::after { content: "✓"; }
-    .queue li[data-state="sent"] .queue-state { color: var(--accent); font-weight: 700; }
-    .queue li[data-state="cancelled"] .queue-marker::after { content: "−"; color: var(--muted); }
-    .queue li[data-state="cancelled"] .queue-name { color: var(--muted); }
-    .demo-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
-    .demo-actions .button { padding: 8px 12px; font-size: 12px; }
-    .demo-actions .reset { padding-inline: 9px; border-color: transparent; color: var(--muted); }
-    .demo-status { min-height: 42px; font-size: 12px; color: var(--accent-dark); margin-top: 12px; line-height: 1.75; }
-    .demo-caption { padding: 12px 22px; border-top: 1px solid var(--line); background: #fafbf8; font-size: 11px; color: var(--muted); line-height: 1.8; }
-    .section { padding-block: 64px; border-top: 1px solid var(--line); }
-    .section-header { display: flex; justify-content: space-between; align-items: end; gap: 32px; margin-bottom: 28px; }
-    .section-index { display: block; color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .07em; margin-bottom: 10px; }
-    h2 { font-size: clamp(25px, 3vw, 32px); letter-spacing: -.025em; }
-    .section-intro { color: var(--muted); font-size: 14px; margin-top: 12px; max-width: 600px; }
-    .section-link { font-size: 13px; flex-shrink: 0; }
-    .install-shell { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-    .install-tabs { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); background: #f0f3ef; }
-    .install-tab { min-height: 60px; border: 0; border-bottom: 3px solid transparent; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); padding: 15px 10px 12px; }
-    .install-tab:hover { color: var(--accent); background: #eaf0ed; }
-    .install-tab[aria-selected="true"] { background: var(--surface); color: var(--accent); border-bottom-color: var(--accent); }
-    .install-tab:focus-visible { outline-offset: -5px; }
-    .install-panel { padding: 30px; }
-    .install-panel + .install-panel { border-top: 1px solid var(--line); }
-    .install-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 32px; }
-    .install-panel h3 { font-size: 19px; margin-bottom: 6px; }
-    .package-line { color: var(--muted); font-size: 12px; margin-bottom: 18px; }
-    .package-line code { color: var(--accent-dark); }
-    .command { min-width: 0; margin-bottom: 14px; }
-    .command-frame { border-radius: 8px; background: var(--ink); color: #f3f6f4; overflow: hidden; }
-    .command-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 15px; border-bottom: 1px solid #ffffff20; color: #c1d2d5; font-size: 11px; min-height: 46px; }
-    .copy-button { flex-shrink: 0; color: #f3f6f4; font-size: 11px; border: 1px solid #ffffff45; background: transparent; border-radius: 4px; padding: 6px 10px; min-height: 30px; }
-    .copy-button:hover { background: #ffffff15; }
-    .copy-button:focus-visible, pre:focus-visible { outline-color: #9bd2dd; outline-offset: -3px; }
-    pre { padding: 18px; overflow-x: auto; font-family: var(--mono); font-size: 12px; line-height: 1.95; tab-size: 2; }
-    pre code { font-size: inherit; overflow-wrap: normal; }
-    .install-notes { padding-top: 4px; font-size: 13px; color: var(--muted); }
-    .install-notes h4 { color: var(--ink); font-size: 13px; margin: 0 0 12px; font-weight: 650; }
-    .install-notes ol { padding-left: 20px; }
-    .install-notes li + li { margin-top: 10px; }
-    .install-notes p + p { margin-top: 12px; }
-    .install-notes dl { margin-bottom: 16px; }
-    .install-notes dt { font-size: 11px; margin-bottom: 3px; }
-    .install-notes dd { margin: 0 0 12px; color: var(--ink); }
-    .install-note { color: var(--muted); font-size: 12px; margin-top: 12px; }
-    details { margin-top: 16px; font-size: 13px; }
-    summary { color: var(--accent); cursor: pointer; padding-block: 8px; }
-    details p { margin: 8px 0 12px; color: var(--muted); }
-    .copy-fallback { padding: 12px; border: 1px solid var(--accent); border-radius: 6px; background: var(--tint); margin-top: 10px; }
-    .copy-fallback label { display: block; font-size: 12px; margin-bottom: 8px; }
-    .copy-fallback textarea { display: block; width: 100%; min-height: 90px; resize: vertical; padding: 10px; border: 1px solid var(--line); border-radius: 4px; background: white; color: var(--ink); font-family: var(--mono); font-size: 12px; line-height: 1.7; }
-    .install-footer { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-between; padding: 15px 30px; border-top: 1px solid var(--line); color: var(--muted); background: #fafbf8; font-size: 12px; }
-    .copy-status { font-size: 12px; color: var(--accent-dark); }
-    .copy-status:not(:empty) { padding-top: 12px; }
-    .channels-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
-    .channel-group h3 { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 16px; margin: 4px 0 8px; }
-    .channel-group h3 span { color: var(--muted); font-size: 11px; font-weight: 400; }
-    .channel-group > p { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
-    table { border-collapse: collapse; width: 100%; text-align: left; }
-    .channel-table { font-size: 13px; }
-    .channel-table th { color: var(--muted); font-size: 11px; font-weight: 500; border-bottom: 1px solid var(--line); padding: 8px 0; }
-    .channel-table td { padding: 12px 0; border-bottom: 1px solid var(--line); }
-    .channel-table td:first-child { font-weight: 650; width: 32%; }
-    .channel-table td:nth-child(2) { color: var(--muted); font-size: 12px; }
-    .channel-table th:last-child, .channel-table td:last-child { text-align: right; white-space: nowrap; }
-    .channel-table td:last-child { color: var(--accent); font-family: var(--mono); font-size: 12px; }
-    .config-line { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 24px; border: 1px solid var(--line); border-radius: 8px; margin-top: 28px; font-size: 13px; }
-    .config-line p { color: var(--muted); }
-    .config-line strong { display: block; color: var(--ink); font-size: 13px; margin-bottom: 3px; }
-    .config-line a { white-space: nowrap; }
-    .mechanism-layout { display: grid; grid-template-columns: 1fr 1.3fr; gap: 80px; }
-    .mechanism-intro p { font-size: 14px; color: var(--muted); margin-top: 16px; }
-    .mechanism-intro .section-link { display: inline-block; margin-top: 24px; }
-    .mechanism-steps { list-style: none; padding: 0; counter-reset: mechanism; }
-    .mechanism-steps li { display: grid; grid-template-columns: 32px 1fr; gap: 16px; counter-increment: mechanism; position: relative; padding-bottom: 28px; }
-    .mechanism-steps li::before { content: counter(mechanism, decimal-leading-zero); font-family: var(--mono); font-size: 11px; font-weight: 650; color: var(--accent); background: var(--tint); width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; position: relative; z-index: 1; }
-    .mechanism-steps li:not(:last-child)::after { content: ""; position: absolute; left: 15px; top: 32px; bottom: 0; width: 1px; background: var(--line); }
-    .mechanism-steps li:last-child { padding-bottom: 0; }
-    .mechanism-steps h3 { font-size: 15px; padding-top: 6px; }
-    .mechanism-steps p { font-size: 13px; color: var(--muted); margin-top: 8px; }
-    .coverage-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
-    .coverage-table { min-width: 660px; font-size: 13px; }
-    .coverage-table thead { background: #f0f3ef; }
-    .coverage-table th, .coverage-table td { padding: 17px 20px; border-bottom: 1px solid var(--line); vertical-align: top; }
-    .coverage-table thead th { color: var(--muted); font-size: 11px; font-weight: 500; }
-    .coverage-table tbody th { width: 17%; font-weight: 650; white-space: nowrap; }
-    .coverage-table td { width: 41.5%; color: var(--muted); }
-    .coverage-table tr:last-child th, .coverage-table tr:last-child td { border-bottom: 0; }
-    .coverage-notes { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 24px; }
-    .coverage-notes h3 { font-size: 14px; margin-bottom: 8px; }
-    .coverage-notes p { font-size: 12px; color: var(--muted); }
-    .coverage-notes .gateway-note { border-left: 3px solid var(--accent); padding-left: 17px; }
-    .site-footer { border-top: 1px solid var(--line); padding-block: 30px 36px; }
-    .footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 18px; font-size: 12px; color: var(--muted); }
-    .footer-inner p { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-    .footer-links { display: flex; flex-wrap: wrap; gap: 20px; }
-    .footer-links a { text-decoration: none; }
-    noscript p { color: var(--muted); font-size: 12px; padding-top: 12px; }
-    @media (max-width: 1000px) {
-      .hero { gap: 32px; }
-      h1 { font-size: 44px; }
-      .hero-facts { gap: 16px; }
-      .install-grid { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px; }
-      .mechanism-layout { gap: 48px; }
-    }
-    @media (max-width: 780px) {
-      .wrap { width: min(600px, calc(100% - 40px)); }
-      .header-inner { min-height: 76px; flex-wrap: wrap; justify-content: center; gap: 0 24px; padding-block: 15px 9px; }
-      .brand { font-size: 16px; }
-      .nav { gap: 24px; justify-content: center; }
-      .nav a { font-size: 12px; }
-      .hero { grid-template-columns: 1fr; gap: 38px; padding-block: 45px 48px; }
-      h1 { font-size: clamp(38px, 8vw, 52px); }
-      .hero-description { max-width: 100%; font-size: 16px; margin-top: 20px; }
-      .hero-facts { gap: 28px; margin-top: 25px; }
-      .section { padding-block: 44px; }
-      .section-header { align-items: start; flex-direction: column; gap: 14px; margin-bottom: 24px; }
-      .install-grid, .channels-layout, .mechanism-layout, .coverage-notes { grid-template-columns: minmax(0, 1fr); gap: 30px; }
-      .install-panel { padding: 24px; }
-      .install-notes { padding-top: 0; }
-      .install-footer { padding-inline: 24px; }
-      .config-line { align-items: start; flex-direction: column; gap: 12px; padding: 18px 20px; }
-      .coverage-notes { gap: 22px; }
-      .footer-inner { align-items: start; flex-direction: column; }
-    }
-    @media (max-width: 420px) {
-      .wrap { width: calc(100% - 32px); }
-      .nav { gap: 20px; }
-      .hero-facts { gap: 18px; }
-      .hero-facts strong { font-size: 16px; }
-      .host-line { font-size: 12px; }
-      .demo-top, .demo-caption { padding-inline: 16px; }
-      .demo-body { padding: 16px; }
-      .notification { padding: 12px; gap: 8px; }
-      .notification .bell-mark { width: 26px; height: 26px; }
-      .demo-actions { gap: 6px; }
-      .demo-actions .button { padding-inline: 9px; }
-      .install-tabs { grid-template-columns: repeat(2, 1fr); }
-      .install-tab { min-height: 52px; font-size: 13px; }
-      .install-panel { padding: 20px 16px; }
-      .install-footer { padding-inline: 16px; }
-      .queue li { grid-template-columns: 16px 1fr 48px 48px; gap: 7px; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto; }
-      *, *::before, *::after { transition: none !important; animation: none !important; }
-    }
-  </style>
+  <link rel="icon" type="image/svg+xml" href="assets/notify-mark.svg">
+  <link rel="stylesheet" href="assets/site.css">
+  <script>
+    try {
+      const theme = localStorage.getItem('cc-notify-theme');
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+    } catch { /* Follow the system when storage is unavailable. */ }
+  </script>
+  <script src="assets/site.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳转到主要内容</a>
-  <header class="site-header">
-    <div class="wrap header-inner">
-      <a class="brand" href="#main" aria-label="cc-notify-hooks 首页">
-        <img class="bell-mark" src="assets/dsh-icon.jpg" width="34" height="34" alt="">
-        cc-notify-hooks
-      </a>
-      <nav class="nav" aria-label="主导航">
-        <a href="#install">安装</a>
-        <a href="#channels">通知渠道</a>
-        <a href="#coverage">兼容性</a>
-        <a class="source-link" href="https://github.com/MarioZZJ/cc-notify-hooks">GitHub <span aria-hidden="true">↗</span></a>
-      </nav>
-    </div>
+  <header class="site-header wrap">
+    <a class="brand" href="#main" aria-label="cc-notify-hooks 首页">
+      <img src="assets/notify-mark.svg" alt="" width="32" height="32">
+      <span>cc-notify-hooks</span>
+    </a>
+    <nav class="nav" aria-label="主导航">
+      <a href="#demo">看演示</a>
+      <a href="#install">安装</a>
+      <a href="https://github.com/MarioZZJ/cc-notify-hooks" class="github-link">GitHub <span aria-hidden="true">↗</span></a>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="切换主题，当前跟随系统" title="切换主题：自动 / 浅色 / 深色" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17Z" fill="currentColor" stroke="none"/></svg>
+        <span id="theme-label">自动</span>
+      </button>
+    </nav>
   </header>
 
-  <main id="main" class="wrap">
-    <section class="hero" aria-labelledby="hero-title">
-      <div>
-        <p class="eyebrow">面向智能体工作流的通知插件</p>
-        <h1 id="hero-title">Agent 需要你时，<br><span>分级通知。</span></h1>
-        <p class="hero-description">先用秒级推送提醒，再用分钟级消息补充上下文。收到你的回复或后续操作信号后，自动取消尚未发送的通知。</p>
-        <p class="host-line">Claude Code · Codex CLI · dsh · Magpie</p>
-        <div class="hero-actions">
-          <a href="#install" class="button primary">选择工具安装 <span class="arrow" aria-hidden="true">↓</span></a>
-          <a href="https://github.com/MarioZZJ/cc-notify-hooks#readme" class="button">阅读文档 <span aria-hidden="true">↗</span></a>
-        </div>
-        <div class="hero-facts" aria-label="产品概览">
-          <span><strong>11</strong>通知渠道</span>
-          <span><strong>4</strong>安装入口</span>
-          <span><strong>按需</strong>设置延迟</span>
-        </div>
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-heading">
+        <p class="eyebrow"><span class="signal-dot" aria-hidden="true"></span> A LITTLE SIGNAL. A BETTER FLOW.</p>
+        <h1 id="hero-title">Agent 继续跑。<br><span>你不必一直等。</span></h1>
       </div>
-
-      <figure class="demo" aria-labelledby="demo-title" aria-describedby="demo-caption">
-        <div class="demo-top">
-          <h2 id="demo-title">一条通知，如何分级送达</h2>
-          <span class="tag">页内模拟</span>
-        </div>
-        <div class="demo-body">
-          <div class="notification">
-            <img class="bell-mark" src="assets/dsh-icon.jpg" width="32" height="32" alt="">
-            <div>
-              <small>通知内容示意</small>
-              <h3>Codex · 需要回复</h3>
-              <p>[demo-project] 请选择修复范围<br>2 个问题 · Session demo-001</p>
-            </div>
-          </div>
-          <div class="queue-heading">
-            <span>示例启用 4 个渠道</span>
-            <span id="demo-time">尚未开始</span>
-          </div>
-          <ol class="queue" aria-label="模拟通知队列">
-            <li data-delay="3" data-state="idle">
-              <span class="queue-marker" aria-hidden="true"></span><span class="queue-name">macOS</span><span class="queue-time">3 秒</span><span class="queue-state">未排队</span>
-            </li>
-            <li data-delay="5" data-state="idle">
-              <span class="queue-marker" aria-hidden="true"></span><span class="queue-name">Telegram</span><span class="queue-time">5 秒</span><span class="queue-state">未排队</span>
-            </li>
-            <li data-delay="15" data-state="idle">
-              <span class="queue-marker" aria-hidden="true"></span><span class="queue-name">Bark</span><span class="queue-time">15 秒</span><span class="queue-state">未排队</span>
-            </li>
-            <li data-delay="300" data-state="idle">
-              <span class="queue-marker" aria-hidden="true"></span><span class="queue-name">飞书</span><span class="queue-time">5 分钟</span><span class="queue-state">未排队</span>
-            </li>
-          </ol>
-          <div class="demo-actions" id="demo-actions" hidden>
-            <button class="button primary" id="demo-advance" type="button">开始演示</button>
-            <button class="button" id="demo-respond" type="button" disabled>模拟已响应</button>
-            <button class="button reset" id="demo-reset" type="button" disabled>重置</button>
-          </div>
-          <p class="demo-status" id="demo-status" role="status" aria-live="polite" aria-atomic="true">手动推进时间，观察发送顺序；也可以模拟响应，取消余下提醒。</p>
-          <noscript><p>启用 JavaScript 后可操作演示。上方列出示例渠道的默认延迟。</p></noscript>
-        </div>
-        <figcaption class="demo-caption" id="demo-caption">仅在本页面模拟，不发送系统通知或网络推送。延迟从收到宿主事件起计算，实际取消时机取决于宿主事件。</figcaption>
-      </figure>
+      <div class="hero-aside">
+        <p class="hero-description">切到另一个会话，或离开电脑一会儿。<br>需要你回复、确认或验收时，<br>让一条通知，把你叫回来。</p>
+        <a class="button primary" href="#install">接入我的 Agent <span aria-hidden="true">↗</span></a>
+        <p class="host-line">Claude Code <i>·</i> Codex CLI <i>·</i> dsh <i>·</i> Magpie</p>
+      </div>
     </section>
 
+    <section class="showcase wrap" id="demo" aria-labelledby="demo-title">
+      <div class="film-heading">
+        <h2 id="demo-title"><span class="signal-dot" aria-hidden="true"></span> 少一点等待，多一点自己的时间。</h2>
+        <a href="demo.html" target="_blank" rel="noopener" class="film-open">打开宽屏演示 <span aria-hidden="true">↗</span><span class="sr-only">（新标签页）</span></a>
+      </div>
+      <figure class="film">
+        <iframe id="workflow-demo" src="demo.html?embed=1" title="分级通知的两种工作场景：并行会话与离席长任务" allow="fullscreen" allowfullscreen loading="eager"></iframe>
+        <figcaption class="film-caption"><span>桌面上的及时提醒，离开电脑后的手机消息。</span><span>40 秒场景演示 <i>·</i> 时间已压缩</span></figcaption>
+      </figure>
+      <noscript><p class="noscript-note">启用 JavaScript 可观看自动演示；下方仍可阅读场景与全部安装命令。</p></noscript>
+      <div class="scenario-pair">
+        <article class="scenario">
+          <div class="scenario-meta"><span class="scenario-number">01</span><span>在电脑前 <i>/</i> 秒级提醒</span></div>
+          <h3>并行推进，不必轮流盯屏。</h3>
+          <p>多个会话各自工作。右上角的系统通知带来项目和问题摘要，你可以切回需要处理的会话，接着往下做。</p>
+          <a href="demo.html?scene=desk" target="_blank" rel="noopener">看桌面场景 <span aria-hidden="true">↗</span><span class="sr-only">（新标签页）</span></a>
+        </article>
+        <article class="scenario">
+          <div class="scenario-meta"><span class="scenario-number">02</span><span>离开电脑 <i>/</i> 分钟级提醒</span></div>
+          <h3>长任务交出去，完成后再回来。</h3>
+          <p>让 Agent 继续跑。手机收到消息，打开就能看见项目和结果摘要。知道工作到了哪一步，再回电脑开始验收。</p>
+          <a href="demo.html?scene=away" target="_blank" rel="noopener">看手机场景 <span aria-hidden="true">↗</span><span class="sr-only">（新标签页）</span></a>
+        </article>
+      </div>
+      <div class="quiet-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m5 12 4 4L19 6"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><p><strong>已经回来处理？</strong> 宿主报告后续活动后，该会话尚未发送的提醒会自动取消。</p><a href="#details">了解通知逻辑 <span aria-hidden="true">↓</span></a></div>
+    </section>
+
+    <div class="setup-area"><div class="wrap">
     <section class="section" id="install" aria-labelledby="install-title">
       <div class="section-header">
         <div>
-          <span class="section-index">01 / 安装</span>
-          <h2 id="install-title">选择你使用的工具</h2>
-          <p class="section-intro">四个入口复用通知脚本与渠道配置。运行依赖 <code>jq</code> 和 <code>curl</code>；macOS 系统通知使用 <code>osascript</code>。</p>
+          <span class="section-index">01 / GET CONNECTED</span>
+          <h2 id="install-title">让你的 Agent 学会叫你。</h2>
+          <p class="section-intro">选择工具，安装插件，再启用你需要的通知。依赖 Bash、<code>jq</code> 和 <code>curl</code>；macOS 系统通知使用 <code>osascript</code>。</p>
         </div>
         <a class="section-link" href="https://github.com/MarioZZJ/cc-notify-hooks/blob/main/docs/compatibility.md">版本基准与安装限制 <span aria-hidden="true">↗</span></a>
       </div>
@@ -475,14 +244,19 @@ bash install.sh magpie</code></pre>
       <noscript><p>当前展示全部安装方式。命令可直接选中复制；启用 JavaScript 后可切换标签并使用复制按钮。</p></noscript>
     </section>
 
-    <section class="section" id="channels" aria-labelledby="channels-title">
-      <div class="section-header">
-        <div>
-          <span class="section-index">02 / 通知渠道</span>
-          <h2 id="channels-title">11 个渠道，按你的节奏启用</h2>
-          <p class="section-intro">表中为各渠道默认延迟，从插件收到事件开始计时。只发送到已启用的渠道，每个渠道均可独立调整。</p>
-        </div>
-      </div>
+
+    <section class="configure" aria-labelledby="configure-title">
+      <div class="configure-title"><span class="step-label">安装之后</span><h2 id="configure-title">选好渠道，<br>再设定提醒的时机。</h2><a href="https://github.com/MarioZZJ/cc-notify-hooks#配置">打开配置指南 <span aria-hidden="true">↗</span></a></div>
+      <ol class="configure-steps">
+        <li><span>01</span><div><h3>电脑前，用短通知</h3><p>macOS 默认 3 秒提醒；也可开启 Telegram、Bark 等手机推送渠道。</p></div></li>
+        <li><span>02</span><div><h3>经常离席，再加一个长通知</h3><p>启用飞书、企业微信或 Slack 等渠道，填写凭据。默认 5 分钟未响应时发送。</p></div></li>
+        <li><span>03</span><div><h3>需要完成提醒，订阅对应事件</h3><p>Claude Code、Codex CLI 与 dsh 的完成提醒使用 <code>stop</code>；Magpie 的网关响应与错误使用 <code>notification</code>。模板默认只开启 macOS 的 <code>notification</code>，请按需订阅事件、启用其他渠道。</p></div></li>
+      </ol>
+    </section>
+    </div></div>
+
+    <section class="section channels-section wrap" id="channels" aria-labelledby="channels-title">
+      <div class="section-header"><div><span class="section-index">02 / YOUR CHANNELS</span><h2 id="channels-title">在你会看的地方，提醒你。</h2><p class="section-intro">11 个渠道，按需开启。每个渠道的延迟与事件都可以单独设置。</p></div><a class="section-link" href="https://github.com/MarioZZJ/cc-notify-hooks/blob/main/plugins/cc-notify-hooks/config/notify.example.json">查看配置模板 <span aria-hidden="true">↗</span></a></div>
       <div class="channels-layout">
         <div class="channel-group">
           <h3 id="short-channels">秒级提醒 <span>6 个渠道</span></h3>
@@ -514,223 +288,21 @@ bash install.sh magpie</code></pre>
           </table>
         </div>
       </div>
-      <div class="config-line">
-        <p><strong>按渠道配置，按事件订阅</strong><code>enabled</code> 控制启用，<code>delay</code> 设置秒数，<code>events</code> 选择通知事件。</p>
-        <a href="https://github.com/MarioZZJ/cc-notify-hooks/blob/main/plugins/cc-notify-hooks/config/notify.example.json">完整配置模板 <span aria-hidden="true">↗</span></a>
-      </div>
+
+      <p class="timing-note">以上为默认延迟，从插件收到事件开始计时。长通知不会按任务运行时长自动触发；已启用的渠道会在各自延迟到达时检查是否仍需发送。</p>
     </section>
 
-    <section class="section" id="mechanism" aria-labelledby="mechanism-title">
-      <div class="mechanism-layout">
-        <div class="mechanism-intro">
-          <span class="section-index">03 / 调度机制</span>
-          <h2 id="mechanism-title">每次发送前，<br>确认通知是否仍待发送</h2>
-          <p>延迟队列按会话隔离。宿主报告后续活动后，清除对应会话或请求的待发标记，其他会话继续保留。</p>
-          <a class="section-link" href="https://github.com/MarioZZJ/cc-notify-hooks#工作原理">阅读工作原理 <span aria-hidden="true">↗</span></a>
-        </div>
-        <ol class="mechanism-steps">
-          <li>
-            <div><h3>宿主事件进入队列</h3><p>接收权限等待、结构化提问、回合结束或网关响应等事件，为已启用的渠道创建待发标记。</p></div>
-          </li>
-          <li>
-            <div><h3>到达延迟，检查标记后发送</h3><p>秒级渠道先提醒，分钟级渠道随后发送。每个渠道发送前都检查对应标记；标记已清除，就跳过发送。</p></div>
-          </li>
-          <li>
-            <div><h3>宿主报告响应，取消余下提醒</h3><p>新输入、提问结束或支持的中断事件可触发清理。取消只作用于尚未发送的通知，已经送达的消息保留。</p></div>
-          </li>
-        </ol>
+    <section class="section details-section wrap" id="details" aria-labelledby="details-title">
+      <div><span class="section-index">03 / GOOD TO KNOW</span><h2 id="details-title">几个你可能关心的问题。</h2><p class="section-intro">让提醒按预期工作。</p><a class="section-link" href="https://github.com/MarioZZJ/cc-notify-hooks/blob/main/docs/compatibility.md">完整兼容性说明 <span aria-hidden="true">↗</span></a></div>
+      <div class="faq-list">
+        <details><summary>通知会带来哪些信息？<span aria-hidden="true">+</span></summary><p>短通知提供工具、项目和简短摘要；结构化提问还可带问题数和 Session 标识。长通知补充事件、可用的工具与会话等定位信息，便于你判断接下来要处理什么。</p></details>
+        <details><summary>点击通知，能直接跳回 Agent 吗？<span aria-hidden="true">+</span></summary><p>目前通知负责告知项目与上下文，返回对应会话由你手动完成。手机通知可在相应消息应用中打开；插件暂未提供会话直达链接或手机远程审批。演示中的鼠标会手动选择对应会话。</p></details>
+        <details><summary>回来处理后，还会继续提醒吗？<span aria-hidden="true">+</span></summary><p>宿主报告新输入、提问结束或支持的工具／中断事件后，会清除对应会话的待发标记。已经发出的通知保留，其他会话继续独立排队。具体取消时机取决于宿主提供的信号。</p></details>
+        <details><summary>四种接入方式有什么区别？<span aria-hidden="true">+</span></summary><p>Claude Code、Codex CLI 与 dsh 使用原生宿主事件，覆盖等待确认、结构化提问及回合结束等场景。Magpie 观察经过网关的模型请求和响应，下一次同会话请求会取消此前待发通知。</p><p>Magpie 的“模型响应完成”可能只是多轮任务的一步；整个 Agent 任务是否结束，需要原生集成提供的信息。原生 hooks 与 Magpie 同时启用会分别通知。</p></details>
       </div>
     </section>
-
-    <section class="section" id="coverage" aria-labelledby="coverage-title">
-      <div class="section-header">
-        <div>
-          <span class="section-index">04 / 事件与兼容性</span>
-          <h2 id="coverage-title">接入层不同，通知含义也不同</h2>
-          <p class="section-intro">Claude Code、Codex CLI 与 dsh 观察原生宿主事件；Magpie 观察经过网关的模型请求。</p>
-        </div>
-        <a class="section-link" href="https://github.com/MarioZZJ/cc-notify-hooks/blob/main/docs/compatibility.md">完整兼容性说明 <span aria-hidden="true">↗</span></a>
-      </div>
-      <div class="coverage-scroll" tabindex="0" role="region" aria-label="四种工具的事件覆盖表，窄屏可横向滚动">
-        <table class="coverage-table">
-          <thead><tr><th scope="col">工具</th><th scope="col">触发通知</th><th scope="col">清理待发通知</th></tr></thead>
-          <tbody>
-            <tr><th scope="row">Claude Code</th><td>权限与等待提醒、结构化提问、回复结束、异常</td><td>新输入、普通工具开始、工具成功或失败、提问结束、会话结束</td></tr>
-            <tr><th scope="row">Codex CLI</th><td>权限请求、结构化提问、回合结束</td><td>新输入、普通工具开始、工具完成、提问结束、中断、会话结束</td></tr>
-            <tr><th scope="row">dsh</th><td>审批等待、结构化提问、正常回合结束、错误或输出限制</td><td>审批决定、提问结束或取消、新输入、新回合、Agent 销毁、插件卸载</td></tr>
-            <tr><th scope="row">Magpie</th><td>可识别的完整文本响应、模型请求错误</td><td>同会话下一次网关请求</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="coverage-notes">
-        <div class="gateway-note">
-          <h3>Magpie：模型响应完成 ≠ Agent 任务结束</h3>
-          <p>一次模型响应可能只是多轮任务的一部分。工具调用响应不作为完成通知；审批按钮、用户回答和客户端中断需要原生 Agent 集成。<a href="https://github.com/MarioZZJ/cc-notify-hooks/blob/main/docs/compatibility.md#magpie">查看网关限制</a>。</p>
-        </div>
-        <div>
-          <h3>取消时间取决于宿主提供的信号</h3>
-          <p>Claude / Codex 的工具开始事件早于权限确认，不能保证点击审批按钮就立即取消。Codex 自动审阅也可能触发权限通知。宿主自身的等待时间另计；详细边界见 <a href="https://github.com/MarioZZJ/cc-notify-hooks/blob/main/docs/compatibility.md">兼容性文档</a>。</p>
-        </div>
-      </div>
-    </section>
+    <section class="closing wrap" aria-label="开始使用"><div><p class="eyebrow">YOUR ATTENTION, BACK TO YOU.</p><h2>下一次等待，<br>可以放心做点别的。</h2></div><a class="button primary" href="#install">选择工具，开始安装 <span aria-hidden="true">↗</span></a></section>
   </main>
-
-  <footer class="site-footer">
-    <div class="wrap footer-inner">
-      <p><strong>cc-notify-hooks</strong><span>·</span>MIT License<span>·</span><a href="https://github.com/MarioZZJ">MarioZZJ</a></p>
-      <nav class="footer-links" aria-label="项目文档">
-        <a href="https://github.com/MarioZZJ/cc-notify-hooks/releases/tag/v2.5.0">v2.5.0</a>
-        <a href="https://github.com/MarioZZJ/cc-notify-hooks">GitHub 源码</a>
-        <a href="https://github.com/MarioZZJ/cc-notify-hooks#配置">配置指南</a>
-        <a href="https://github.com/MarioZZJ/cc-notify-hooks/blob/main/docs/compatibility.md">兼容性说明</a>
-      </nav>
-    </div>
-  </footer>
-
-  <script>
-    (() => {
-      const tabList = document.getElementById('install-tabs');
-      const tabs = Array.from(tabList.querySelectorAll('[role="tab"]'));
-      const panels = tabs.map(tab => document.getElementById(tab.getAttribute('aria-controls')));
-
-      function selectTab(index, moveFocus = false) {
-        tabs.forEach((tab, current) => {
-          const selected = current === index;
-          tab.setAttribute('aria-selected', String(selected));
-          tab.tabIndex = selected ? 0 : -1;
-          panels[current].hidden = !selected;
-        });
-        document.getElementById('copy-status').textContent = '';
-        if (moveFocus) tabs[index].focus();
-      }
-
-      tabs.forEach((tab, index) => {
-        panels[index].setAttribute('role', 'tabpanel');
-        panels[index].setAttribute('aria-labelledby', tab.id);
-        panels[index].tabIndex = 0;
-        tab.addEventListener('click', () => selectTab(index));
-        tab.addEventListener('keydown', event => {
-          let next;
-          if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
-          else if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
-          else if (event.key === 'Home') next = 0;
-          else if (event.key === 'End') next = tabs.length - 1;
-          else return;
-          event.preventDefault();
-          selectTab(next, true);
-        });
-      });
-      selectTab(0);
-      tabList.hidden = false;
-
-      const copyStatus = document.getElementById('copy-status');
-      document.querySelectorAll('[data-copy]').forEach(button => {
-        button.hidden = false;
-        button.addEventListener('click', async () => {
-          const code = document.getElementById(button.dataset.copy);
-          const text = code.textContent;
-          const command = button.closest('.command');
-          copyStatus.textContent = '';
-          try {
-            if (!window.isSecureContext || !navigator.clipboard?.writeText) {
-              throw new Error('Clipboard unavailable');
-            }
-            await navigator.clipboard.writeText(text);
-            button.textContent = '已复制';
-            const fallback = command.querySelector('.copy-fallback');
-            if (fallback) fallback.hidden = true;
-            copyStatus.textContent = '已复制到剪贴板。';
-          } catch {
-            let fallback = command.querySelector('.copy-fallback');
-            if (!fallback) {
-              fallback = document.createElement('div');
-              fallback.className = 'copy-fallback';
-              const label = document.createElement('label');
-              const textarea = document.createElement('textarea');
-              textarea.id = `${code.id}-manual`;
-              textarea.readOnly = true;
-              textarea.spellcheck = false;
-              textarea.rows = Math.max(3, Math.min(8, text.split('\n').length + 1));
-              label.htmlFor = textarea.id;
-              label.textContent = '自动复制不可用。选中下方内容，按 Ctrl+C / ⌘C，或长按复制。';
-              fallback.append(label, textarea);
-              command.append(fallback);
-            }
-            fallback.hidden = false;
-            const textarea = fallback.querySelector('textarea');
-            textarea.value = text;
-            if (!command.closest('[hidden]')) {
-              textarea.focus();
-              textarea.select();
-              copyStatus.textContent = '已显示可手动复制的内容。';
-            }
-          }
-        });
-      });
-
-      const rows = Array.from(document.querySelectorAll('.queue li'));
-      const advance = document.getElementById('demo-advance');
-      const respond = document.getElementById('demo-respond');
-      const reset = document.getElementById('demo-reset');
-      const time = document.getElementById('demo-time');
-      const status = document.getElementById('demo-status');
-      const steps = [0, 3, 5, 15, 300];
-      const formatTime = seconds => seconds === 300 ? '5 分钟' : `${seconds} 秒`;
-      let step = -1;
-      let cancelled = false;
-
-      function renderQueue() {
-        rows.forEach(row => {
-          const state = step < 0 ? 'idle'
-            : Number(row.dataset.delay) <= steps[step] ? 'sent'
-            : cancelled ? 'cancelled' : 'pending';
-          row.dataset.state = state;
-          row.querySelector('.queue-state').textContent = {
-            idle: '未排队', pending: '待发送', sent: '已发送', cancelled: '已取消'
-          }[state];
-        });
-        time.textContent = step < 0 ? '尚未开始' : `模拟时间 ${formatTime(steps[step])}`;
-        respond.disabled = step < 0 || cancelled || step === steps.length - 1;
-        reset.disabled = step < 0;
-        advance.textContent = step < 0 ? '开始演示'
-          : cancelled || step === steps.length - 1 ? '重新演示'
-          : `推进到 ${formatTime(steps[step + 1])}`;
-      }
-
-      advance.addEventListener('click', () => {
-        if (cancelled || step === steps.length - 1) {
-          step = 0;
-          cancelled = false;
-        } else {
-          step += 1;
-        }
-        renderQueue();
-        const sent = rows.filter(row => row.dataset.state === 'sent').length;
-        status.textContent = step === 0
-          ? '模拟事件已触发，4 个渠道待发。推进时间，或模拟已响应。'
-          : step === steps.length - 1
-          ? '模拟到达 5 分钟：4 个渠道均已发送，队列结束。可重新演示中途响应。'
-          : `模拟到达 ${formatTime(steps[step])}：已发送 ${sent} 条，仍有 ${rows.length - sent} 条待发。`;
-      });
-
-      respond.addEventListener('click', () => {
-        if (step < 0 || cancelled || step === steps.length - 1) return;
-        cancelled = true;
-        renderQueue();
-        const count = rows.filter(row => row.dataset.state === 'cancelled').length;
-        status.textContent = `模拟已收到响应：${count} 条待发通知已取消。${count < rows.length ? '已经发送的消息保留。' : '本次尚未发送任何消息。'}`;
-        advance.focus();
-      });
-
-      reset.addEventListener('click', () => {
-        step = -1;
-        cancelled = false;
-        renderQueue();
-        status.textContent = '演示已重置。可重新开始，比较不同时间响应的结果。';
-        advance.focus();
-      });
-      document.getElementById('demo-actions').hidden = false;
-    })();
-  </script>
+  <footer class="site-footer wrap"><p><a class="brand" href="#main"><img src="assets/notify-mark.svg" alt="" width="24" height="24">cc-notify-hooks</a><span>MIT License <i>·</i> By <a href="https://github.com/MarioZZJ">MarioZZJ</a></span></p><nav aria-label="页脚导航"><a href="https://github.com/MarioZZJ/cc-notify-hooks/releases/tag/v2.5.0">v2.5.0</a><a href="https://github.com/MarioZZJ/cc-notify-hooks#readme">文档</a><a href="https://github.com/MarioZZJ/cc-notify-hooks">GitHub <span aria-hidden="true">↗</span></a></nav></footer>
 </body>
 </html>

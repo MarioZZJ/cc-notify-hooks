@@ -4,6 +4,8 @@
 
 当前版本：[v2.5.0](https://github.com/MarioZZJ/cc-notify-hooks/releases/tag/v2.5.0)。
 
+[项目介绍与安装引导](https://mariozzj.github.io/cc-notify-hooks/) · [宽屏场景演示](https://mariozzj.github.io/cc-notify-hooks/demo.html) · [网页本地预览](docs/website.md)
+
 面向 **Claude Code、Codex CLI、DeepSeek Harness（dsh）** 的分级推送通知系统，也支持作为 **Magpie 网关 hook 插件**直接安装。支持 **11 个通知渠道**，各入口复用通知配置与发送脚本。
 
 最新兼容性基准、事件差异和市场收录规则见 [兼容性说明](docs/compatibility.md)（2026-11-14）。

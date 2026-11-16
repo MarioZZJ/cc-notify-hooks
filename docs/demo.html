@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f8f7f4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17191c" media="(prefers-color-scheme: dark)">
+  <meta name="description" content="用一段宽屏演示，看看 cc-notify-hooks 如何在多个 Agent 会话和长任务之间，把需要你处理的消息送到桌面与手机。">
+  <title>场景演示 · cc-notify-hooks</title>
+  <link rel="icon" type="image/svg+xml" href="assets/notify-mark.svg">
+  <link rel="stylesheet" href="assets/demo.css">
+  <script>
+    let theme = 'system';
+    try { theme = localStorage.getItem('cc-notify-theme') || 'system'; } catch {}
+    document.documentElement.dataset.theme = theme === 'light' || theme === 'dark'
+      ? theme : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  </script>
+  <script src="assets/demo.js" defer></script>
+</head>
+<body>
+  <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+    <symbol id="i-replay" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 .7 7M4 4v6h6"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></symbol>
+    <symbol id="i-feishu" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="m3 4 13 5-7 4L3 4Zm18 4-4 10-8-5 12-5ZM7 14l9 5-6 2-3-7Z"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m5 6 5 6-5 6m8 0h6"/></symbol>
+    <symbol id="i-theme" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" stroke="none"/></symbol>
+  </svg>
+
+  <main class="film" id="film" data-scene="desktop" data-phase="desktop-busy" aria-label="cc-notify-hooks 双场景演示">
+    <div class="film-grain" aria-hidden="true"></div>
+    <header class="film-heading">
+      <div>
+        <p class="eyebrow"><span class="live-dot"></span><span id="scene-label">01 / 在电脑前</span></p>
+        <h1 id="scene-title">专注眼前这一件，其他会话也不会错过。</h1>
+      </div>
+      <div class="film-meta"><a class="home-link" href="index.html" aria-label="返回 cc-notify-hooks 首页">cc / notify <span>↗</span></a><span>场景演示 · 时间已压缩</span></div>
+    </header>
+
+    <section class="story-stage" aria-label="通知场景动画">
+      <div class="desktop" aria-hidden="true">
+        <div class="wallpaper"><i></i><i></i><i></i></div>
+        <div class="mac-menu">
+          <span class="menu-left"><span class="mac-symbol">●</span><b>终端</b><span>Shell</span><span>编辑</span><span>显示</span><span>窗口</span></span>
+          <span class="menu-right"><span class="wifi">⌁</span><span class="battery"></span><span>周一 14:32</span></span>
+        </div>
+
+        <div class="back-window back-window-left">
+          <div class="window-bar"><span class="traffic"><i></i><i></i><i></i></span><span>api-service — Codex</span></div>
+          <div class="back-terminal"><span class="terminal-green">~/projects/api-service</span><p>› 修复接口超时，补充测试</p><p class="terminal-dim">Reading src/handlers.ts</p><p class="terminal-dim">Running integration tests…</p><span class="tiny-progress"><i></i></span><span class="running-text">Agent is working</span></div>
+        </div>
+        <div class="back-window back-window-right">
+          <div class="window-bar"><span class="traffic"><i></i><i></i><i></i></span><span>dataset — dsh</span></div>
+          <div class="back-terminal"><span class="terminal-green">~/projects/dataset</span><p>› 清理数据，更新统计</p><p class="terminal-dim">Parsing records…</p><div class="data-lines"><span></span><span></span><span></span><span></span></div><span class="running-text">Processing 2,048 records</span></div>
+        </div>
+
+        <div class="work-window">
+          <div class="window-bar front-bar"><span class="traffic"><i></i><i></i><i></i></span><span class="front-window-title">projects — 3 个会话</span><span class="window-command">⌘ 1</span></div>
+          <div class="terminal-tabs">
+            <div class="terminal-tab research-tab"><span class="tab-dot"></span><span>research-notes</span><small>Claude</small></div>
+            <div class="terminal-tab design-tab"><span class="tab-dot"></span><span>design-system</span><small>Codex</small></div>
+            <div class="terminal-tab benchmark-tab"><span class="tab-dot"></span><span>benchmark-suite</span><small>Codex</small></div>
+          </div>
+
+          <div class="terminal-view research-view">
+            <div class="terminal-path">~/projects/research-notes <span>main</span></div>
+            <div class="prompt-line"><span>›</span> 整理检索结果，比较三种方法的适用范围。</div>
+            <div class="response-heading"><span class="agent-star">✳</span><b>检索结果已整理</b></div>
+            <p class="terminal-copy">找到了 12 篇相关研究，先对齐三个比较维度：</p>
+            <div class="research-table"><span>方法</span><span>适用数据</span><span>主要特点</span><b>实体对齐</b><span>多源语料</span><span>统一知识对象</span><b>关系抽取</b><span>论文摘要</span><span>保留证据上下文</span><b>历史追踪</b><span>跨年文献</span><span>还原知识演化</span></div>
+            <div class="terminal-input"><span>›</span> 从第二种方法继续看 <span class="caret"></span></div>
+          </div>
+
+          <div class="terminal-view design-view">
+            <div class="terminal-path">~/projects/design-system <span>feat / components</span></div>
+            <div class="response-heading"><span class="agent-star">✳</span><b>需要你确认一个设计细节。</b></div>
+            <p class="terminal-copy">按钮与输入框已对齐样式，圆角使用哪一种？</p>
+            <div class="decision-options"><div class="decision-option"><span>1</span><div><b>8px · 更紧凑</b><small>保持当前界面的几何感</small></div><i class="button-example compact-example">Button</i></div><div class="decision-option selected-option"><span>2</span><div><b>12px · 更柔和</b><small>与通知卡片保持一致</small></div><i class="button-example soft-example">Button</i></div></div>
+            <div class="decision-status"><span class="waiting-answer">等待你的选择</span><span class="answered">✓ 已回复，Agent 继续工作</span></div>
+            <div class="terminal-input response-input"><span>›</span> 2. 12px，继续统一组件样式。<span class="caret"></span></div>
+          </div>
+
+          <div class="terminal-view long-running-view">
+            <div class="terminal-path">~/projects/benchmark-suite <span>evaluation</span></div>
+            <div class="prompt-line"><span>›</span> 跑完评测，汇总结果，生成报告。</div>
+            <div class="response-heading"><span class="agent-star spinning">✳</span><b>正在执行评测</b></div>
+            <div class="run-counter"><strong>32<span> / 48</span></strong><small>evaluation batches</small></div>
+            <div class="long-progress"><i></i></div>
+            <div class="run-log"><p><span>✓</span> 基线结果已保存</p><p><span>✓</span> 数据校验完成</p><p><span>↳</span> 正在运行剩余批次…</p></div>
+          </div>
+
+          <div class="terminal-view long-review-view">
+            <div class="terminal-path">~/projects/benchmark-suite <span>evaluation</span></div>
+            <div class="response-heading"><span class="agent-star">✳</span><b>48 组评测完成，报告已生成。</b></div>
+            <p class="terminal-copy">结果与分析已保存。你可以开始检查这两个文件：</p>
+            <div class="output-file"><span class="file-icon">↗</span><div><b>reports/evaluation.md</b><span>评测结论、方法对比与异常说明</span></div><small>已生成</small></div>
+            <div class="output-file"><span class="file-icon">≡</span><div><b>results/summary.csv</b><span>48 组实验的完整结果</span></div><small>已保存</small></div>
+            <div class="review-footer"><span class="success-check">✓</span> 现在，轮到你验收。<span>Ready for your review</span></div>
+            <div class="terminal-input"><span>›</span> 打开报告，检查实验结果。<span class="caret"></span></div>
+          </div>
+          <div class="mouse-pointer"><svg viewBox="0 0 24 30"><path d="M2 1 2 23l6-6 5 11 5-2-5-10h9Z"/></svg><i></i></div>
+        </div>
+
+        <div class="mac-notification">
+          <div class="notification-icon"><svg><use href="#i-bell"/></svg></div>
+          <div><div class="notification-header"><b>Codex · 需要回复</b><span>现在</span></div><strong>[design-system] 请选择按钮圆角</strong><p>8px 更紧凑，还是 12px 更柔和？</p></div>
+        </div>
+        <div class="cancelled-note"><svg><use href="#i-check"/></svg><span>已继续此会话 · 后续待发提醒取消</span></div>
+
+        <div class="desktop-dock"><span class="dock-finder">◡</span><span class="dock-terminal">›_</span><span class="dock-browser">◉</span><span class="dock-notes"><i></i></span><span class="dock-divider"></span><span class="dock-folder">▰</span></div>
+      </div>
+
+      <div class="away-label" aria-hidden="true"><span class="away-rule"></span><p class="away-running-label">人先离开。<br><b>Agent 继续。</b></p><p class="away-complete-label">23 分钟后，回合结束。<br><b>5 分钟未响应，手机收到提醒。</b></p></div>
+
+      <div class="phone" aria-hidden="true">
+        <div class="phone-button phone-button-left"></div><div class="phone-button phone-button-right"></div>
+        <div class="phone-screen">
+          <div class="phone-wallpaper"><i></i><i></i></div>
+          <div class="phone-status"><b>14:32</b><span>▮▮▮ <span class="phone-wifi">⌁</span><span class="phone-battery"></span></span></div>
+          <div class="dynamic-island"></div>
+          <div class="lockscreen"><span class="lock-glyph">⌑</span><p>星期一 · 下午</p><strong>14:32</strong><span class="lock-weather">☀ 适合出去走走</span></div>
+          <div class="phone-notification"><div class="phone-notice-head"><span class="feishu-icon"><svg><use href="#i-feishu"/></svg></span><b>飞书</b><span>现在</span></div><strong>Agent 通知</strong><p>[benchmark-suite] Codex 回复结束</p><p class="phone-notice-preview">48 组评测完成，报告已生成。</p></div>
+          <div class="phone-tap"></div>
+          <div class="phone-chat">
+            <div class="chat-bar"><span>‹</span><div><b>Agent 通知</b><small>工作群 · 通知机器人</small></div><span>···</span></div>
+            <div class="chat-time">14:32</div>
+            <div class="chat-sender"><span class="feishu-icon"><svg><use href="#i-feishu"/></svg></span><b>cc-notify-hooks <small>机器人</small></b></div>
+            <div class="message-card"><div class="message-card-title"><span>✓</span><b>Codex · 任务完成</b></div><div class="message-card-content"><small>项目</small><strong>benchmark-suite</strong><p>48 组评测完成，报告与结果已保存。可以回到电脑检查了。</p><div class="message-meta">事件 · Stop<br>Session · demo-ben</div></div></div>
+            <div class="chat-composer"><span>＋</span><div>消息</div><span>☺</span></div>
+          </div>
+          <div class="phone-homebar"></div>
+        </div>
+      </div>
+
+      <div class="return-badge" aria-hidden="true"><svg><use href="#i-check"/></svg><span>回到电脑，开始验收</span></div>
+    </section>
+
+    <div class="film-caption"><span class="caption-step" id="caption-step">01 — 01</span><p id="caption-text">你在处理另一件事。三个会话，各自向前。</p><span class="caption-kind" id="caption-kind">秒级 · 桌面提醒</span></div>
+
+    <nav class="player-controls" aria-label="演示播放控制">
+      <div class="playback-buttons"><button class="icon-button play-toggle" id="play-toggle" type="button" aria-label="暂停演示"><svg aria-hidden="true"><use href="#i-pause"/></svg></button><button class="icon-button" id="replay" type="button" aria-label="从头重播"><svg aria-hidden="true"><use href="#i-replay"/></svg></button></div>
+      <div class="chapter-buttons" aria-label="选择场景"><button type="button" data-chapter="0" aria-pressed="true"><span>01</span> 多会话并行</button><button type="button" data-chapter="18" aria-pressed="false"><span>02</span> 离开电脑后</button></div>
+      <div class="seek-wrap"><label class="sr-only" for="seek">演示进度（秒）</label><input id="seek" type="range" min="0" max="39.9" step="0.1" value="0"><span class="time-display" id="time-display">00:00 / 00:40</span></div>
+      <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="主题：跟随系统。点击切换为浅色"><svg aria-hidden="true"><use href="#i-theme"/></svg></button>
+      <button class="icon-button fullscreen-toggle" id="fullscreen-toggle" type="button" aria-label="全屏观看"><svg aria-hidden="true"><use href="#i-expand"/></svg></button>
+    </nav>
+
+    <div class="rotate-message" id="rotate-message"><svg aria-hidden="true"><use href="#i-phone"/></svg><p>把手机横过来，<br>看 Agent 如何找到你。</p><span>这是一段为宽屏设计的演示</span><a href="index.html#install" target="_top">先去安装 <span>↗</span></a></div>
+    <div class="motion-note" id="motion-note" hidden><span>已按你的低动态偏好暂停。</span><button type="button" id="motion-play">播放演示 <span>→</span></button></div>
+    <div class="fullscreen-note" id="fullscreen-note" hidden><span id="fullscreen-status" role="status"></span><a href="demo.html" target="_top">打开独立演示页 ↗</a><button id="dismiss-fullscreen-note" type="button" aria-label="关闭全屏提示">×</button></div>
+    <noscript><div class="no-script-message"><p>启用 JavaScript，观看桌面与手机通知的场景演示。</p><a href="index.html#install" target="_top">查看安装方式 →</a></div></noscript>
+  </main>
+</body>
+</html>
