@@ -2,8 +2,8 @@
   --paper:#f8f7f4;
   --ink:#23262a;
   --muted:#6e7378;
-  --green:#8b5b35;
-  --lime:#f5ba72;
+  --accent:#8b5b35;
+  --signal:#f5ba72;
   --line:#dadddf;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
   --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace
@@ -1145,7 +1145,8 @@ svg {
   position:absolute;
   inset:0;
   background:#f5f6f7;
-  padding-top:17%;
+  /* Percentage padding is relative to phone width, while the header uses height. */
+  padding-top:39%;
   opacity:0;
   transform:translateY(4%);
   transition:opacity .55s,transform .65s cubic-bezier(.2,.7,.2,1);
@@ -1208,7 +1209,7 @@ svg {
 }
 .chat-sender b {
   font-family:var(--sans);
-  font-size:.66cqw;
+  font-size:.75cqw;
   font-weight:500;
   color:#7c8590;
   display:flex;
@@ -1237,7 +1238,7 @@ svg {
   padding:.7cqw;
   background:#f4e6d3;
   color:#65594e;
-  font-size:.72cqw
+  font-size:.84cqw
 }
 .message-card-title>b {
   font-weight:600
@@ -1255,21 +1256,21 @@ svg {
   padding:.85cqw .7cqw
 }
 .message-card-content>small {
-  font-size:.53cqw;
+  font-size:.65cqw;
   color:#8993a0;
   display:block;
   margin-bottom:.3cqw
 }
 .message-card-content>strong {
   font-family:var(--mono);
-  font-size:.72cqw;
+  font-size:.8cqw;
   font-weight:550;
   color:#4a5664;
   display:block;
   letter-spacing:-.025em
 }
 .message-card-content>p {
-  font-size:.7cqw;
+  font-size:.85cqw;
   line-height:1.7;
   color:#6d7783;
   margin:.65cqw 0 .7cqw
@@ -1292,7 +1293,7 @@ svg {
   border-top:1px solid #eef0f3;
   margin-top:.8cqw;
   padding-top:.6cqw;
-  font-size:.52cqw;
+  font-size:.65cqw;
   line-height:1.9;
   color:#a4acb6
 }
@@ -1354,7 +1355,7 @@ svg {
 }
 .caption-step {
   font-family:var(--mono);
-  font-size:.62cqw;
+  font-size:clamp(9px,.7cqw,12px);
   color:#99938e;
   white-space:nowrap
 }
@@ -1368,7 +1369,7 @@ svg {
 }
 .caption-kind {
   margin-left:auto;
-  font-size:.64cqw;
+  font-size:clamp(10px,.75cqw,13px);
   color:#8b837b;
   white-space:nowrap
 }
@@ -1393,9 +1394,10 @@ svg {
 .icon-button {
   display:grid;
   place-items:center;
-  height:2.25cqw;
-  width:2.25cqw;
-  padding:.5cqw;
+  height:clamp(28px,2.25cqw,38px);
+  width:clamp(28px,2.25cqw,38px);
+  padding:clamp(5px,.5cqw,8px);
+  flex-shrink:0;
   border:1px solid #d2cec9;
   border-radius:50%;
   background:transparent;
@@ -1426,7 +1428,7 @@ svg {
   gap:.4cqw
 }
 .chapter-buttons button {
-  font-size:.65cqw;
+  font-size:clamp(10px,.85cqw,14px);
   line-height:1;
   border:0;
   border-radius:1.5cqw;
@@ -1438,7 +1440,7 @@ svg {
 }
 .chapter-buttons button span {
   font-family:var(--mono);
-  font-size:.55cqw;
+  font-size:clamp(9px,.65cqw,11px);
   margin-right:.4cqw;
   opacity:.65
 }
@@ -1504,7 +1506,7 @@ svg {
 }
 .time-display {
   font-family:var(--mono);
-  font-size:.57cqw;
+  font-size:clamp(9px,.7cqw,12px);
   color:#979089;
   white-space:nowrap
 }
@@ -1952,8 +1954,8 @@ svg {
   --paper:#17191c;
   --ink:#f3f1ed;
   --muted:#b0b2b5;
-  --green:#f0aa63;
-  --lime:#f5ba72;
+  --accent:#f0aa63;
+  --signal:#f5ba72;
   --line:#43474c
 }
 :root[data-theme="dark"] body {
