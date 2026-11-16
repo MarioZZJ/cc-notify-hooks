@@ -39,6 +39,19 @@ Claude Code 2.1.275 及以上可在会话中执行一条命令：
 
 本仓库的 `.claude-plugin/marketplace.json` 指向 `plugins/cc-notify-hooks`。这是仓库提供的自建 marketplace，目录收录状态见[分发说明](compatibility.md#市场分发)。
 
+### 从终端或 Agent 安装
+
+支持插件管理的本地 shell 可直接执行：
+
+```bash
+claude plugin marketplace add MarioZZJ/cc-notify-hooks
+claude plugin install cc-notify-hooks@cc-notify-hooks --scope user
+```
+
+已有 marketplace 时复用；已有安装时保留原范围，按后文更新。新安装示例使用当前用户范围；也可按需要选择 `project` 或 `local`。安装后用 `claude plugin list` 查看插件与范围，启动新会话或在已有会话中运行 `/reload-plugins` 加载。
+
+这些是普通 shell 命令；`/plugin` 等斜杠命令只用于支持它们的交互会话，不能由 `claude -p` 执行。官方说明见[从 shell 安装](https://code.claude.com/docs/en/discover-plugins#install-from-your-shell)与[插件 CLI 参考](https://code.claude.com/docs/en/plugins/cli-reference)。
+
 ### Claude 本地插件模式
 
 用于本地试用或开发，在终端执行：

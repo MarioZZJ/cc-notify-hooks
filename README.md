@@ -52,7 +52,12 @@
 将下面这段话发给你正在使用的 Agent，它可以读取[纯文本安装指南](https://mariozzj.github.io/cc-notify-hooks/llms.txt)，按当前环境完成接入：
 
 ```text
-请读取 https://mariozzj.github.io/cc-notify-hooks/llms.txt，帮我在当前使用的 Agent 中安装并配置 cc-notify-hooks。优先根据环境确认接入方式；无法确定时再问我。保留已有 hooks 和通知配置，按我需要的渠道完成配置，最后告诉我启用情况和生效步骤。
+请读取 https://mariozzj.github.io/cc-notify-hooks/llms.txt，
+帮我在当前使用的 Agent 中安装并配置 cc-notify-hooks。
+
+优先根据环境确认接入方式；无法确定时再问我。
+保留已有 hooks 和通知配置，按我需要的渠道完成配置，
+最后告诉我启用情况和生效步骤。
 ```
 
 ### 手动安装

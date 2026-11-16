@@ -24,15 +24,24 @@
 
 ## 安装 Claude Code
 
-Claude Code 2.1.275 及以上支持下面的一步安装。在 Claude Code 会话中执行，不要把斜杠命令当作 shell 命令：
+能访问实际运行环境的 Agent 优先使用普通 shell 命令。先检查已有插件、marketplace 与安装范围；已有入口按安装指南更新，沿用原范围。新安装执行两步 CLI：
+
+```bash
+claude plugin marketplace add MarioZZJ/cc-notify-hooks
+claude plugin install cc-notify-hooks@cc-notify-hooks --scope user
+```
+
+marketplace 已注册时复用来源，不重复添加。user 范围适用于当前用户的各个项目；用户已指定 project 或 local 时遵循其设置。安装后用 claude plugin list 只读核对插件和范围。CLI 依据：[官方插件命令](https://code.claude.com/docs/en/plugins/cli-reference)。
+
+从 shell 安装的插件在下次启动 Claude Code 时加载；已有会话可通过宿主支持的 /reload-plugins 流程刷新。插件加载后，可在会话中运行 /cc-notify-hooks:config；Agent 也可按下文的实际配置路径合并通知设置。若当前工具无法刷新正在运行的会话，完成其余安装与配置后，告知用户仍需刷新。
+
+交互式会话还可使用下面的一步入口（Claude Code 2.1.275 及以上），按宿主面板完成安装范围选择：
 
 ```text
 /plugin install cc-notify-hooks --marketplace MarioZZJ/cc-notify-hooks
-/reload-plugins
-/cc-notify-hooks:config
 ```
 
-插件名为 cc-notify-hooks。配置向导用于选择渠道与延迟；真实凭据按下文要求在本地填写。插件模式安装或更新后刷新插件；若宿主未加载更新，启动新会话。旧版本的分步安装、独立安装与迁移参见完整安装指南，不要同时注册两种入口。
+不要将 /plugin、/reload-plugins 或 /cc-notify-hooks:config 当作 shell 命令执行，也不要用 claude -p 执行 /plugin。真实凭据按下文要求在本地填写；其他入口与迁移参见完整安装指南。
 
 ## 安装 ChatGPT Codex
 
