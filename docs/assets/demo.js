@@ -78,7 +78,7 @@
   const longShots = [
     { at: 0, id: 'mission', eyebrow: '长通知 / 01 · 交给 AGENT', title: '这个任务，\n有点难。', subtitle: '重构、回归测试、兼容性检查。', caption: '长任务交给 Agent，注意力还给自己。', copy: [88, 245, 1, 1, 0], width: 440 },
     { at: 2.8, id: 'busy', eyebrow: '长通知 / 02 · 放心离开', title: '它继续忙。\n你先歇一会。', subtitle: '屏幕暗下来，工作还在继续。', caption: '时间快进 · Agent 仍在推进任务', copy: [88, 245, 0.93, 1, 0], width: 430 },
-    { at: 5.7, id: 'break', eyebrow: '长通知 / 03 · 把时间还给你', title: '喝杯咖啡。\n再玩一小局。', subtitle: '不必守着进度条。', caption: '电脑还在工作，你可以做点别的。', copy: [105, 140, 0.9, 1, 0], width: 680 },
+    { at: 5.7, id: 'break', eyebrow: '长通知 / 03 · 把时间还给你', title: '喝杯咖啡。\n再玩一小局。', subtitle: '', caption: '电脑还在工作，你可以做点别的。', copy: [105, 104, 0.9, 1, 0], width: 680 },
     { at: 10.5, id: 'alert', eyebrow: '长通知 / 04 · 消息来了', title: '叮，\n是 Agent。', subtitle: '任务完成，手机上的提醒找到你。', caption: '已启用飞书，并订阅 stop 事件 · 延迟按配置触发', copy: [105, 225, 1, 1, 0], width: 600 },
     { at: 14.1, id: 'message', eyebrow: '长通知 / 05 · 打开看看', title: '难的部分，\n已经做完了。', subtitle: '重构完成，测试通过。等你验收。', caption: '打开飞书，先看清 Agent 的结果摘要。', copy: [105, 250, 0.94, 1, 0], width: 640 },
     { at: 18.1, id: 'return', eyebrow: '长通知 / 06 · 回到电脑', title: '回来，\n刚好验收。', subtitle: '打开变更，检查结果。', caption: '回到电脑，继续对应会话。', copy: [88, 260, 0.93, 1, 0], width: 410 },
@@ -102,6 +102,7 @@
       text('shot-eyebrow', shot.eyebrow);
       nodes['shot-title'].replaceChildren(...shot.title.split('\n').flatMap((line, index) => index ? [document.createElement('br'), document.createTextNode(line)] : [document.createTextNode(line)]));
       text('shot-subtitle', shot.subtitle);
+      nodes['shot-subtitle'].hidden = !shot.subtitle;
       text('caption-text', shot.caption);
       nodes['story-copy'].style.width = (shot.width || 1400) + 'px';
     }
@@ -116,14 +117,14 @@
       [0, 535, 155, 0.88, 1, 0], [2.8, 535, 155, 0.88, 1, 0],
       [3.5, 500, 150, 0.92, 1, 0], [4.7, 500, 150, 0.92, 1, 0],
       [5.9, 92, 326, 0.62, 1, 0], [9.9, 92, 326, 0.62, 1, 0],
-      [10.9, -70, 490, 0.39, 0.34, 0], [17.5, -70, 490, 0.39, 0.34, 0],
+      [10.9, -70, 490, 0.39, 0, 0], [17.5, -70, 490, 0.39, 0, 0],
       [18.7, 505, 155, 0.9, 1, 0], [24, 505, 155, 0.9, 1, 0]
     ]));
     pose('person', sample(at, [
-      [0, 870, 280, 0.92, 0, 0], [4.8, 870, 280, 0.92, 0, 0],
-      [5.9, 858, 245, 0.96, 1, 0], [9.9, 858, 245, 0.96, 1, 0],
-      [10.9, 605, 315, 0.8, 0.55, 0], [17.5, 605, 315, 0.8, 0.55, 0],
-      [18.5, 350, 430, 0.68, 0, 0], [24, 350, 430, 0.68, 0, 0]
+      [0, 790, 260, 1.4, 0, 0], [4.8, 790, 260, 1.4, 0, 0],
+      [5.9, 790, 230, 1.4, 1, 0], [9.9, 790, 230, 1.4, 1, 0],
+      [10.9, 605, 445, 0.8, 0.3, 0], [17.5, 605, 445, 0.8, 0.3, 0],
+      [18.5, 350, 495, 0.68, 0, 0], [24, 350, 495, 0.68, 0, 0]
     ]));
     const phonePose = sample(at, [
       [0, 1280, 410, 0.62, 0, 0], [5, 1280, 410, 0.62, 0, 0],
@@ -138,7 +139,7 @@
     const roomAmount = windowAt(at, 4.9, 18.6, 0.9);
     opacity('table-scene', roomAmount);
     nodes['table-scene'].style.transform = 'translateY(' + (1 - roomAmount) * 30 + 'px)';
-    document.querySelector('.room-shelf').style.opacity = roomAmount * 0.7;
+    document.querySelector('.room-shelf').style.opacity = '0';
     document.querySelector('.room-plant').style.opacity = roomAmount;
     const dim = between(at, 3.5, 5.1) * (1 - between(at, 18, 18.8));
     opacity('screen-dim', dim * 0.6);
@@ -167,7 +168,7 @@
 
     // A small sip, blink and continuous game provide visible life between cuts.
     const sip = windowAt(at, 6.5, 9.1, 0.7);
-    nodes['coffee-arm'].setAttribute('transform', 'translate(' + (-42 * sip).toFixed(1) + ',' + (-44 * sip).toFixed(1) + ') rotate(' + (-9 * sip).toFixed(1) + ' 300 250)');
+    nodes['coffee-arm'].setAttribute('transform', 'translate(' + (-78 * sip).toFixed(1) + ',' + (-22 * sip).toFixed(1) + ') rotate(' + (-12 * sip).toFixed(1) + ' 300 250)');
     nodes['coffee-steam'].style.opacity = (0.45 + 0.3 * Math.sin(at * 3)).toFixed(3);
     nodes['coffee-steam'].setAttribute('transform', 'translate(0,' + (-3 - Math.sin(at * 2) * 3).toFixed(1) + ')');
     const blinkPhase = at % 3.2;

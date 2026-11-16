@@ -382,7 +382,7 @@ svg {
 
 .table-scene {
   position:absolute;
-  z-index:1;
+  z-index:3;
   left:0;
   top:734px;
   width:1600px;
@@ -1533,6 +1533,7 @@ svg {
 
 /* Original vector character, coffee and an actual moving game are the interlude. */
 .person {
+  clip-path:inset(0 -150px 160px -50px);
   position:absolute;
   z-index:2;
   left:0;
@@ -2489,7 +2490,7 @@ svg {
 }
 
 [data-scene="short"] .film-caption {
-  bottom:35px
+  bottom:90px
 }
 
 [data-theme="dark"] .mac-menubar {
@@ -2537,7 +2538,7 @@ svg {
     font-size:13px
   }
   .film-caption {
-    bottom:58px
+    bottom:90px
   }
 }
 
@@ -2643,3 +2644,17 @@ svg {
   padding-top:9px;
   padding-bottom:9px
 }
+
+/* Messaging follows the same appearance preference as the surrounding film. */
+[data-theme="dark"] .phone-message { background:#242d39; color:#e3e8ee; }
+[data-theme="dark"] .message-appbar { background:#2c3745; border-color:#3c4756; }
+[data-theme="dark"] .message-appbar > span { color:#acbad0; }
+[data-theme="dark"] .message-sender small { background:#39485b; color:#b1c1d8; }
+[data-theme="dark"] .feishu-card { background:#303b4a; border-color:#4c5867; }
+[data-theme="dark"] .feishu-card > h3 { background:#344c70; color:#d0e1ff; border-color:#4d6180; }
+[data-theme="dark"] .message-project { background:#3d4c60; color:#c1cee0; }
+[data-theme="dark"] .message-result > span { color:#a8debf; background:#35594d; }
+[data-theme="dark"] .message-meta { border-color:#4c5867; color:#a3b2c4; }
+[data-theme="dark"] [data-shot="message"] .phone-status { color:#dbe4f0; }
+[data-theme="dark"] [data-shot="message"] .phone-status i { background:#dbe4f0; border-color:#242d39; outline-color:#dbe4f0; }
+[data-theme="dark"] [data-shot="message"] .phone-homebar { background:#c0ccda; }
