@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="440" viewBox="0 0 1200 440" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">cc-notify-hooks · Agent 继续跑，你不必一直等</title>
+  <desc id="desc">暖橙与淡紫的桌面通知和手机消息插画。多会话并行时，系统通知提示切回；离开电脑后，手机消息提醒回来验收。</desc>
+  <defs>
+    <filter id="shadow" x="-40%" y="-50%" width="180%" height="220%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#111827" flood-opacity=".13"/></filter>
+    <linearGradient id="wallpaper" x1="635" y1="143" x2="1049" y2="396" gradientUnits="userSpaceOnUse"><stop stop-color="#534761"/><stop offset="1" stop-color="#35455b"/></linearGradient>
+    <clipPath id="phone-screen"><rect x="1071" y="214" width="92" height="184" rx="19"/></clipPath>
+  </defs>
+  <rect width="1200" height="440" rx="28" fill="#17191c"/>
+  <rect x=".5" y=".5" width="1199" height="439" rx="27.5" stroke="#35383e"/>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+    <g transform="translate(48 37)">
+      <rect width="40" height="40" rx="11" fill="#23262a"/>
+      <path d="M12 25h16l-2-3v-5a6 6 0 0 0-12 0v5l-2 3Z" stroke="#f5ba72" stroke-width="1.9" stroke-linejoin="round"/>
+      <path d="M17.5 28a2.7 2.7 0 0 0 5 0" stroke="#f5ba72" stroke-width="1.9" stroke-linecap="round"/>
+      <circle cx="28" cy="12" r="4.5" fill="#f5ba72" stroke="#23262a" stroke-width="2"/>
+    </g>
+    <text x="101" y="65" fill="#f3f1ed" font-size="24" font-weight="750" letter-spacing="-.7">cc-notify-hooks</text>
+    <text x="48" y="126" fill="#f0aa63" font-family="ui-monospace, 'SFMono-Regular', Consolas, monospace" font-size="12" font-weight="700" letter-spacing="1.9">A LITTLE SIGNAL. A BETTER FLOW.</text>
+    <text x="46" y="196" fill="#f3f1ed" font-size="54" font-weight="800" letter-spacing="-2">Agent 继续跑。</text>
+    <text x="46" y="262" fill="#f0aa63" font-size="54" font-weight="800" letter-spacing="-2">你不必一直等。</text>
+    <text x="49" y="306" fill="#b0b2b5" font-size="19">多会话并行，或安心离席。</text>
+    <g transform="translate(48 346)">
+      <rect width="200" height="43" rx="13" fill="#3d3025"/>
+      <rect x="15" y="13" width="20" height="14" rx="3" stroke="#f0aa63" stroke-width="1.8"/>
+      <path d="M21 31h8m-4-4v4" stroke="#f0aa63" stroke-width="1.8" stroke-linecap="round"/>
+      <text x="46" y="28" fill="#f3f1ed" font-size="16" font-weight="600">电脑前，及时提醒</text>
+    </g>
+    <g transform="translate(262 346)">
+      <rect width="207" height="43" rx="13" fill="#302c40"/>
+      <rect x="18" y="10" width="13" height="23" rx="4" stroke="#bca5e8" stroke-width="1.8"/>
+      <path d="M22 29h5" stroke="#bca5e8" stroke-width="1.8" stroke-linecap="round"/>
+      <text x="44" y="28" fill="#f3f1ed" font-size="16" font-weight="600">离开后，消息找你</text>
+    </g>
+    <ellipse cx="858" cy="243" rx="219" ry="168" fill="#302b44"/>
+    <circle cx="1072" cy="333" r="83" fill="#4b3b28"/>
+    <path d="m613 178 5-10 5 10 10 5-10 5-5 10-5-10-10-5Z" fill="#f0aa63" opacity=".7"/>
+    <path d="m1135 166 4-8 4 8 8 4-8 4-4 8-4-8-8-4Z" fill="#bca5e8" opacity=".65"/>
+    <ellipse cx="856" cy="411" rx="268" ry="8" fill="#101215"/>
+    <g filter="url(#shadow)">
+      <rect x="627" y="135" width="430" height="269" rx="17" fill="#353940"/>
+      <rect x="635" y="143" width="414" height="253" rx="10" fill="url(#wallpaper)"/>
+      <path d="M635 153a10 10 0 0 1 10-10h394a10 10 0 0 1 10 10v10H635Z" fill="#33343e" fill-opacity=".72"/>
+      <text x="645" y="157" fill="#f0efed" font-size="8" font-weight="700">⌘  Terminal</text>
+      <text x="1015" y="157" fill="#f0efed" font-size="8">14:32</text>
+      <path d="M817 143h50v6a6 6 0 0 1-6 6h-38a6 6 0 0 1-6-6Z" fill="#353940"/>
+      <rect x="650" y="193" width="273" height="177" rx="8" fill="#24272f" stroke="#484952"/>
+      <path d="M650 201a8 8 0 0 1 8-8h257a8 8 0 0 1 8 8v14H650Z" fill="#34363e"/>
+      <g fill="#aaa9a3"><circle cx="661" cy="204" r="3"/><circle cx="672" cy="204" r="3"/><circle cx="683" cy="204" r="3"/></g>
+      <text x="760" y="208" fill="#b1b4bb" font-size="8">docs-site</text>
+      <rect x="685" y="174" width="328" height="199" rx="9" fill="#282c34" stroke="#484952"/>
+      <path d="M685 183a9 9 0 0 1 9-9h310a9 9 0 0 1 9 9v15H685Z" fill="#34363e"/>
+      <circle cx="698" cy="186" r="3.6" fill="#ff6058"/><circle cx="711" cy="186" r="3.6" fill="#febc2e"/><circle cx="724" cy="186" r="3.6" fill="#28c840"/>
+      <text x="807" y="189" fill="#f0efed" font-size="9" font-weight="600">checkout-api</text>
+      <text x="703" y="225" fill="#b1b4bb" font-family="ui-monospace, Consolas, monospace" font-size="10">ChatGPT Codex</text>
+      <text x="703" y="251" fill="#f0efed" font-size="13" font-weight="700">› 重构结算服务</text>
+      <g fill="#b1b4bb" font-size="11"><text x="704" y="276">梳理调用链与依赖</text><text x="704" y="296">补齐回归测试</text></g>
+      <rect x="701" y="315" width="294" height="37" rx="6" fill="#314134"/>
+      <circle cx="715" cy="333" r="6" fill="#799c67"/>
+      <path d="m712 333 2 2 4-4" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="728" y="337" fill="#c0d8ae" font-size="11" font-weight="600">修改已完成，等你验收</text>
+      <rect x="799" y="379" width="89" height="13" rx="5" fill="#33343e" fill-opacity=".8"/>
+      <rect x="804" y="382" width="8" height="8" rx="2" fill="#7eacdf"/><rect x="817" y="382" width="8" height="8" rx="2" fill="#f5ba72"/><rect x="830" y="382" width="8" height="8" rx="2" fill="#b7a6db"/><rect x="843" y="382" width="8" height="8" rx="2" fill="#6eaa8f"/><rect x="856" y="382" width="8" height="8" rx="2" fill="#6795b6"/><rect x="869" y="382" width="8" height="8" rx="2" fill="#4e565f"/>
+      <path d="M601 404h483c-2 8-15 9-29 9H630c-14 0-27-1-29-9Z" fill="#727781"/>
+      <path d="M800 404h87v2a3 3 0 0 1-3 3h-81a3 3 0 0 1-3-3Z" fill="#575d67"/>
+    </g>
+    <g filter="url(#shadow)">
+      <rect x="846" y="96" width="291" height="83" rx="19" fill="#363a43" stroke="#555a65"/>
+      <rect x="860" y="119" width="36" height="36" rx="10" fill="#f5ba72"/>
+      <path d="M870 141h16l-2-3v-5a6 6 0 0 0-12 0v5l-2 3Z" stroke="#69451f" stroke-width="1.7" stroke-linejoin="round"/>
+      <path d="M875 145a3 3 0 0 0 6 0" stroke="#69451f" stroke-width="1.7" stroke-linecap="round"/>
+      <text x="907" y="119" fill="#b1b4bb" font-size="10">cc-notify-hooks · 现在</text>
+      <text x="907" y="141" fill="#f0efed" font-size="14" font-weight="700">checkout-api · 需要确认</text>
+      <text x="907" y="160" fill="#b1b4bb" font-size="11">迁移方案准备好了</text>
+    </g>
+    <g filter="url(#shadow)">
+      <rect x="1065" y="208" width="104" height="196" rx="25" fill="#353940"/>
+      <rect x="1071" y="214" width="92" height="184" rx="19" fill="#292d34"/>
+      <g clip-path="url(#phone-screen)">
+        <rect x="1071" y="244" width="92" height="119" fill="#c4d9ee"/>
+        <circle cx="1138" cy="266" r="17" fill="#ffe294"/>
+        <path d="m1071 311 35-33 57 59v26h-92Z" fill="#789a88"/>
+        <path d="m1071 345 53-38 39 21v35h-92Z" fill="#507b70"/>
+        <rect x="1080" y="371" width="58" height="4" rx="2" fill="#b1b4bb" opacity=".4"/>
+        <rect x="1080" y="380" width="36" height="3" rx="1.5" fill="#b1b4bb" opacity=".25"/>
+      </g>
+      <rect x="1099" y="219" width="36" height="10" rx="5" fill="#23262a"/>
+      <text x="1080" y="238" fill="#f0efed" font-size="7" font-weight="600">14:58</text>
+      <rect x="1102" y="391" width="30" height="3" rx="1.5" fill="#f0efed" opacity=".5"/>
+      <rect x="1028" y="280" width="151" height="62" rx="13" fill="#363a43" stroke="#555a65"/>
+      <rect x="1038" y="292" width="21" height="21" rx="6" fill="#4187eb"/>
+      <path d="m1042 304 7-8 7 4-8 8Z" fill="white"/>
+      <text x="1067" y="295" fill="#b1b4bb" font-size="8">飞书 · 刚刚</text>
+      <text x="1067" y="309" fill="#f0efed" font-size="11" font-weight="700">Agent 干完了</text>
+      <text x="1039" y="328" fill="#b1b4bb" font-size="9">checkout-api · 等你验收</text>
+    </g>
+  </g>
+</svg>
