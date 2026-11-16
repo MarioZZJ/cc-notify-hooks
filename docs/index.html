@@ -15,6 +15,7 @@
   <meta property="og:image" content="https://mariozzj.github.io/cc-notify-hooks/assets/icon.png">
   <link rel="icon" type="image/svg+xml" href="assets/notify-mark.svg">
   <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/home-demo.css">
   <script>
     try {
       const theme = localStorage.getItem('cc-notify-theme');
@@ -22,6 +23,7 @@
     } catch { /* Follow the system when storage is unavailable. */ }
   </script>
   <script src="assets/site.js" defer></script>
+  <script src="assets/home-demo.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳转到主要内容</a>
@@ -54,30 +56,97 @@
       </div>
     </section>
 
-    <section class="showcase wrap" id="demo" aria-labelledby="demo-title">
-      <div class="film-heading">
-        <h2 id="demo-title"><span class="signal-dot" aria-hidden="true"></span> 少一点等待，多一点自己的时间。</h2>
-        <a href="demo.html" target="_blank" rel="noopener" class="film-open">打开宽屏演示 <span aria-hidden="true">↗</span><span class="sr-only">（新标签页）</span></a>
+    <section class="showcase wrap home-demo" id="demo" aria-labelledby="demo-title">
+      <div class="demo-heading">
+        <h2 id="demo-title">装好插件，让通知来找你。</h2>
+        <button class="motion-toggle" id="home-motion-toggle" type="button" aria-label="暂停首页动画" hidden><span class="motion-icon" aria-hidden="true"></span><span class="motion-label">暂停动画</span></button>
       </div>
-      <figure class="film">
-        <iframe id="workflow-demo" src="demo.html?embed=1" title="分级通知的两种工作场景：并行会话与离席长任务" allow="fullscreen" allowfullscreen loading="eager"></iframe>
-        <figcaption class="film-caption"><span>桌面上的及时提醒，离开电脑后的手机消息。</span><span>40 秒场景演示 <i>·</i> 时间已压缩</span></figcaption>
-      </figure>
-      <noscript><p class="noscript-note">启用 JavaScript 可观看自动演示；下方仍可阅读场景与全部安装命令。</p></noscript>
-      <div class="scenario-pair">
-        <article class="scenario">
-          <div class="scenario-meta"><span class="scenario-number">01</span><span>在电脑前 <i>/</i> 秒级提醒</span></div>
-          <h3>并行推进，不必轮流盯屏。</h3>
-          <p>多个会话各自工作。右上角的系统通知带来项目和问题摘要，你可以切回需要处理的会话，接着往下做。</p>
-          <a href="demo.html?scene=desk" target="_blank" rel="noopener">看桌面场景 <span aria-hidden="true">↗</span><span class="sr-only">（新标签页）</span></a>
+      <div class="notice-pair">
+        <article class="notice-card notice-long" aria-labelledby="long-notice-title">
+          <div class="notice-art" aria-hidden="true">
+            <div class="long-scene">
+              <span class="art-orbit orbit-long"></span>
+              <div class="mini-laptop">
+                <div class="laptop-screen">
+                  <div class="mini-menubar"><span>⌘ <b>Terminal</b></span><span>14:32</span></div>
+                  <div class="laptop-notch"></div>
+                  <div class="mini-window laptop-window">
+                    <div class="mini-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>checkout-api</span></div>
+                    <div class="mini-terminal">
+                      <span class="terminal-prompt">› 重构结算服务</span>
+                      <span class="terminal-line">梳理调用链与依赖</span>
+                      <span class="terminal-line">补齐回归测试</span>
+                      <span class="terminal-line">整理修改说明</span>
+                      <span class="agent-working"><i></i> 任务已交给 Agent</span>
+                    </div>
+                  </div>
+                  <div class="mini-dock"><i></i><i></i><i></i><i></i><i></i></div>
+                </div>
+                <div class="laptop-base"></div>
+              </div>
+              <span class="signal-path"><i></i><i></i><i></i></span>
+              <div class="mini-phone">
+                <span class="phone-island"></span>
+                <span class="phone-time">14:32</span>
+                <div class="phone-video"><span class="video-sun"></span><span class="video-hill"></span><span class="video-play"></span></div>
+                <span class="phone-video-label">休息一下</span>
+                <span class="phone-video-line"></span>
+                <span class="phone-video-line short-line"></span>
+                <span class="phone-home"></span>
+              </div>
+              <div class="mini-toast phone-toast">
+                <span class="toast-app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V9a6 6 0 0 1 12 0v7l2 2H4l2-2Z"/><path d="M10 21h4"/></svg></span>
+                <div><span class="toast-source">消息 · 现在</span><strong>Agent 干完了</strong><span class="toast-copy">checkout-api · 可以验收了</span></div>
+              </div>
+              <span class="notice-spark spark-long">✦</span>
+            </div>
+          </div>
+          <div class="notice-copy">
+            <div class="notice-type"><span>长通知</span><span>离开电脑，也能收到消息</span></div>
+            <h3 id="long-notice-title">去喝杯咖啡，做好了叫你。</h3>
+            <p>手机收到 Agent 的结果摘要，再回电脑验收。</p>
+            <a href="demo.html?scene=long" class="scene-link" target="_blank" rel="noopener">看完整演示 <span class="scene-play" aria-hidden="true">↗</span><span class="sr-only">：长通知（新标签页）</span></a>
+          </div>
         </article>
-        <article class="scenario">
-          <div class="scenario-meta"><span class="scenario-number">02</span><span>离开电脑 <i>/</i> 分钟级提醒</span></div>
-          <h3>长任务交出去，完成后再回来。</h3>
-          <p>让 Agent 继续跑。手机收到消息，打开就能看见项目和结果摘要。知道工作到了哪一步，再回电脑开始验收。</p>
-          <a href="demo.html?scene=away" target="_blank" rel="noopener">看手机场景 <span aria-hidden="true">↗</span><span class="sr-only">（新标签页）</span></a>
+        <article class="notice-card notice-short" aria-labelledby="short-notice-title">
+          <div class="notice-art" aria-hidden="true">
+            <div class="short-scene">
+              <span class="art-orbit orbit-short"></span>
+              <div class="mini-window mini-session session-api">
+                <div class="mini-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>checkout-api</span></div>
+                <div class="mini-terminal">
+                  <span class="terminal-project">API / Codex CLI</span>
+                  <span class="terminal-prompt">迁移方案准备好了</span>
+                  <span class="terminal-line">保留旧接口的兼容层？</span>
+                  <span class="session-reply">等待你确认 <i>↵</i></span>
+                </div>
+              </div>
+              <div class="mini-window mini-session session-web">
+                <div class="mini-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>web-ui</span></div>
+                <div class="mini-terminal">
+                  <span class="terminal-project">WEB / Claude Code</span>
+                  <span class="terminal-prompt">› 调整登录页面</span>
+                  <span class="terminal-line">更新组件与样式</span>
+                  <span class="terminal-line">检查不同屏幕尺寸</span>
+                  <span class="agent-working"><i></i> 正在继续</span>
+                </div>
+              </div>
+              <div class="mini-toast desktop-toast">
+                <span class="toast-app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V9a6 6 0 0 1 12 0v7l2 2H4l2-2Z"/><path d="M10 21h4"/></svg></span>
+                <div><span class="toast-source">cc-notify-hooks · 现在</span><strong>checkout-api · 需要确认</strong><span class="toast-copy">迁移方案准备好了</span></div>
+              </div>
+              <span class="notice-spark spark-short">✦</span>
+            </div>
+          </div>
+          <div class="notice-copy">
+            <div class="notice-type"><span>短通知</span><span>多个会话，各自推进</span></div>
+            <h3 id="short-notice-title">你忙你的，有事再切回来。</h3>
+            <p>桌面右上角及时提醒，切回对应窗口接着做。</p>
+            <a href="demo.html?scene=short" class="scene-link" target="_blank" rel="noopener">看完整演示 <span class="scene-play" aria-hidden="true">↗</span><span class="sr-only">：短通知（新标签页）</span></a>
+          </div>
         </article>
       </div>
+      <p class="concept-note">这里是通知概念示意；打开任一完整演示，观看独立的全屏场景短片。</p>
       <div class="quiet-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m5 12 4 4L19 6"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><p><strong>已经回来处理？</strong> 宿主报告后续活动后，该会话尚未发送的提醒会自动取消。</p><a href="#details">了解通知逻辑 <span aria-hidden="true">↓</span></a></div>
     </section>
 

@@ -4,7 +4,9 @@
 
 当前版本：[v2.5.0](https://github.com/MarioZZJ/cc-notify-hooks/releases/tag/v2.5.0)。
 
-[项目介绍与安装引导](https://mariozzj.github.io/cc-notify-hooks/) · [宽屏场景演示](https://mariozzj.github.io/cc-notify-hooks/demo.html) · [网页本地预览](docs/website.md)
+[项目介绍与安装引导](https://mariozzj.github.io/cc-notify-hooks/) · [长通知场景演示](https://mariozzj.github.io/cc-notify-hooks/demo.html?scene=long) · [短通知场景演示](https://mariozzj.github.io/cc-notify-hooks/demo.html?scene=short) · [网页本地预览](docs/website.md)
+
+首页用轻量动画介绍桌面提醒与手机消息。独立宽屏演示分别展示“离席等待长任务、收到消息后回电脑验收”和“多个 Agent 窗口并行、收到提醒后切回处理”；两个场景可单独播放、循环和全屏查看，演示时间已压缩。
 
 面向 **Claude Code、Codex CLI、DeepSeek Harness（dsh）** 的分级推送通知系统，也支持作为 **Magpie 网关 hook 插件**直接安装。支持 **11 个通知渠道**，各入口复用通知配置与发送脚本。
 

@@ -4,18 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#f8f7f4" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#17191c" media="(prefers-color-scheme: dark)">
-  <meta name="description" content="用一段宽屏演示，看看 cc-notify-hooks 如何在多个 Agent 会话和长任务之间，把需要你处理的消息送到桌面与手机。">
-  <title>场景演示 · cc-notify-hooks</title>
+  <meta name="description" content="两支独立的 HTML 场景短片：长任务完成，手机叫你回来验收；多个 Agent 会话并行，macOS 通知提醒你及时切回。">
+  <meta name="theme-color" content="#f5f3eb">
+  <title>通知，会找到你 · cc-notify-hooks</title>
   <link rel="icon" type="image/svg+xml" href="assets/notify-mark.svg">
-  <link rel="stylesheet" href="assets/demo.css">
   <script>
-    let theme = 'system';
-    try { theme = localStorage.getItem('cc-notify-theme') || 'system'; } catch {}
-    document.documentElement.dataset.theme = theme === 'light' || theme === 'dark'
-      ? theme : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    (() => {
+      let theme = 'system';
+      try { theme = localStorage.getItem('cc-notify-theme') || 'system'; } catch {}
+      document.documentElement.dataset.theme = ['light', 'dark'].includes(theme) ? theme : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    })();
   </script>
+  <link rel="stylesheet" href="assets/demo.css">
   <script src="assets/demo.js" defer></script>
 </head>
 <body>
@@ -31,130 +31,114 @@
     <symbol id="i-feishu" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="m3 4 13 5-7 4L3 4Zm18 4-4 10-8-5 12-5ZM7 14l9 5-6 2-3-7Z"/></symbol>
     <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m5 6 5 6-5 6m8 0h6"/></symbol>
     <symbol id="i-theme" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M3 8h14v7a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5V8Zm14 1h2a3 3 0 0 1 0 6h-2M6 3v2m5-3v3m5-2v2"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8a16 16 0 0 1 20 0M5 12a11 11 0 0 1 14 0m-11 4a6 6 0 0 1 8 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-apple" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M16.4 2c.2 1.8-1.1 3.5-2.7 3.9-.3-1.7 1-3.4 2.7-3.9ZM19 16.6c-.5 1.2-.8 1.8-1.4 2.8-.9 1.3-2.1 2.9-3.6 2.9-1.3 0-1.6-.8-3.3-.8-1.6 0-2 .8-3.3.8-1.5 0-2.6-1.5-3.5-2.8-2.5-3.8-2.8-8.3-1.2-10.7 1.1-1.7 2.8-2.7 4.4-2.7 1.4 0 2.3.8 3.5.8s2-.8 3.7-.8c1.4 0 2.9.8 3.9 2.1-3.4 1.8-2.9 6.7.8 8.4Z"/></symbol>
   </svg>
 
-  <main class="film" id="film" data-scene="desktop" data-phase="desktop-busy" aria-label="cc-notify-hooks 双场景演示">
-    <div class="film-grain" aria-hidden="true"></div>
-    <header class="film-heading">
-      <div>
-        <p class="eyebrow"><span class="live-dot"></span><span id="scene-label">01 / 在电脑前</span></p>
-        <h1 id="scene-title">专注眼前这一件，其他会话也不会错过。</h1>
-      </div>
-      <div class="film-meta"><a class="home-link" href="index.html" aria-label="返回 cc-notify-hooks 首页">cc / notify <span>↗</span></a><span>场景演示 · 时间已压缩</span></div>
+  <main class="player" id="player" aria-label="cc-notify-hooks 场景短片">
+    <header class="player-nav">
+      <a class="brand" href="index.html" aria-label="返回 cc-notify-hooks 首页"><img src="assets/notify-mark.svg" alt="" width="25" height="25"><span>cc / notify</span><span class="back-label">返回首页</span></a>
+      <nav class="scene-switch" aria-label="选择独立短片">
+        <button type="button" data-select-scene="long" aria-pressed="true"><span class="scene-number">01</span> 长通知 <span class="scene-length">24s</span></button>
+        <button type="button" data-select-scene="short" aria-pressed="false"><span class="scene-number">02</span> 短通知 <span class="scene-length">14s</span></button>
+      </nav>
+      <span class="nav-note">HTML 短片 · 时间已压缩</span>
     </header>
 
-    <section class="story-stage" aria-label="通知场景动画">
-      <div class="desktop" aria-hidden="true">
-        <div class="wallpaper"><i></i><i></i><i></i></div>
-        <div class="mac-menu">
-          <span class="menu-left"><span class="mac-symbol">●</span><b>终端</b><span>Shell</span><span>编辑</span><span>显示</span><span>窗口</span></span>
-          <span class="menu-right"><span class="wifi">⌁</span><span class="battery"></span><span>周一 14:32</span></span>
+    <div class="film-frame" id="film-frame">
+      <section class="film-canvas" id="film" data-scene="long" data-shot="mission" aria-label="长通知场景动画">
+        <div class="room-art" aria-hidden="true"><div class="sun-disc"></div><div class="room-arch"></div><div class="room-shelf"><i></i><i></i><i></i></div><div class="room-plant"><i></i><i></i><i></i><b></b></div></div>
+        <div class="story-copy" id="story-copy"><p class="shot-eyebrow" id="shot-eyebrow">长通知 / 01</p><h1 id="shot-title">这个任务，<br>有点难。</h1><p class="shot-subtitle" id="shot-subtitle">交给 Agent。你可以先去休息。</p></div>
+        <div class="table-scene" id="table-scene" aria-hidden="true"><div class="table-edge"></div><div class="table-leg"></div></div>
+
+        <div class="laptop" id="laptop" aria-hidden="true">
+          <div class="laptop-lid"><div class="mac-screen" id="mac-screen">
+            <svg class="mac-wallpaper" viewBox="0 0 964 602" preserveAspectRatio="none"><rect width="964" height="602" fill="#76b9c7"/><path d="M-80-90C280 50 210 240 550 190S870-120 1060 20V602H-80Z" fill="#b9dbd2"/><path d="M-90 330C170 70 390 340 630 270S850 180 1060 380V602H-90Z" fill="#edba82"/><path d="M-70 430C230 200 360 440 570 390S920 310 1050 510V620H-70Z" fill="#3e8198"/><path d="M-60 520C250 350 450 610 1050 420V640H-60Z" fill="#28546f"/></svg>
+            <div class="mac-menubar"><div><svg class="apple-icon"><use href="#i-apple"/></svg><b>Terminal</b><span>Shell</span><span>Edit</span><span>View</span><span>Window</span><span>Help</span></div><div><svg><use href="#i-wifi"/></svg><span class="mac-battery"></span><span id="mac-time">Mon 14:32</span></div></div>
+            <div class="camera-notch"></div>
+
+            <article class="mac-window task-window" id="task-window">
+              <div class="window-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>checkout — Codex</span><span class="titlebar-trailing">⌘1</span></div>
+              <div class="terminal-body">
+                <div class="terminal-location">~/projects/checkout <span>refactor / payments</span></div>
+                <div class="task-prompt"><span>›</span><p id="task-prompt-text">重构结算模块，补齐回归测试，再检查兼容性。</p><i class="text-caret" id="prompt-caret"></i></div>
+                <div class="task-work" id="task-work">
+                  <div class="agent-heading"><span class="agent-symbol">✳</span><strong id="work-heading">正在拆解任务</strong><span class="work-clock" id="work-clock">00:02</span></div>
+                  <div class="task-checklist"><div id="check-1"><span>✓</span>分析支付链路与依赖</div><div id="check-2"><span>✓</span>重构结算模块，保留兼容接口</div><div id="check-3"><span>✓</span>补齐回归测试与异常分支</div><div id="check-4"><span>✓</span>生成变更说明与验收清单</div></div>
+                  <div class="agent-progress"><i id="agent-progress"></i></div>
+                  <div class="log-viewport"><div class="work-log" id="work-log"><p><span>read</span> src/payments/checkout.ts</p><p><span>read</span> src/payments/adapters.ts</p><p><span>edit</span> extract payment validation</p><p><span>test</span> checkout / legacy compatibility</p><p><span>edit</span> handle retries &amp; rollback</p><p><span>test</span> 86 assertions passed</p><p><span>write</span> docs/checkout-review.md</p><p><span>done</span> ready for your review</p></div></div>
+                  <div class="terminal-status"><span class="working-dot"></span><span id="terminal-status">Working · no need to keep watching</span><b id="fast-forward">›› 时间快进</b></div>
+                </div>
+                <div class="task-review" id="task-review"><div class="agent-heading"><span class="agent-symbol">✳</span><strong>重构完成，等你验收。</strong><span class="passed-pill">86 tests passed</span></div><p class="review-summary">兼容旧接口，补齐失败重试与回滚。</p><div class="review-file" id="review-file"><span class="file-mark">≡</span><div><b>checkout-review.md</b><small>变更说明 · 测试结果 · 验收清单</small></div><span>↗</span></div><div class="review-diff"><p><span>+</span> extractPaymentValidation(order)</p><p><span>+</span> await retryWithBackoff(payment)</p><p><span>+</span> preserveLegacyCheckout(request)</p></div><div class="review-done" id="review-done"><svg><use href="#i-check"/></svg>验收通过，继续下一件事。</div></div>
+              </div>
+            </article>
+
+            <div class="parallel-windows" id="parallel-windows">
+              <article class="mac-window api-window" id="api-window"><div class="window-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>api-service — Codex</span><span class="titlebar-trailing">⌘1</span></div><div class="terminal-body"><div class="terminal-location">~/projects/api-service <span>feature / v2</span></div><div class="agent-heading"><span class="agent-symbol">✳</span><strong id="api-heading">正在更新接口</strong></div><p class="agent-description" id="api-description">迁移逻辑已准备好，需要确认兼容策略。</p><div class="api-question"><div class="answer-option" id="api-answer"><span>1</span><div><b>保留 /v1，同时新增 /v2</b><small>让现有客户端继续正常使用</small></div><span class="answer-check">✓</span></div><div class="answer-option secondary"><span>2</span><div><b>直接替换为 /v2</b><small>同步更新调用方</small></div></div></div><div class="session-footer" id="api-footer">等待你的选择</div></div></article>
+              <article class="mac-window tests-window" id="tests-window"><div class="window-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>test-suite — dsh</span><span class="titlebar-trailing">⌘2</span></div><div class="terminal-body"><div class="terminal-location">~/projects/test-suite <span>regression</span></div><div class="agent-heading"><span class="agent-symbol">✳</span><strong id="tests-heading">回归测试运行中</strong></div><div class="test-count"><b id="tests-count">48</b><span> / 86 tests</span><span class="test-badge" id="tests-badge">RUNNING</span></div><div class="test-results"><p><span>✓</span> checkout / payment flow <b>32 passed</b></p><p><span>✓</span> api / backwards compatibility <b>28 passed</b></p><p><span>✓</span> retry / rollback <b>26 passed</b></p></div><div class="session-footer" id="tests-footer">正在检查剩余异常分支…</div></div></article>
+              <article class="mac-window web-window" id="web-window"><div class="window-titlebar"><span class="traffic-lights"><i></i><i></i><i></i></span><span>landing-page — Claude Code</span><span class="titlebar-trailing">⌘3</span></div><div class="terminal-body"><div class="terminal-location">~/projects/landing-page <span>design / home</span></div><div class="agent-heading"><span class="agent-symbol claude-symbol">✳</span><strong>继续打磨眼前的页面。</strong></div><div class="web-work"><div class="mini-site"><div class="mini-site-nav"><i></i><span></span><span></span></div><h3>Make room<br>for good work.</h3><b>Let’s go <span>↗</span></b><div class="mini-site-shape"></div></div><div class="web-notes"><p><span>✓</span> 页面结构已调整</p><p><span>✓</span> 按钮样式已统一</p><p class="web-note-active"><span>↳</span> 优化首屏排版</p></div></div><div class="web-input">› <span id="web-input-text">标题再简洁一点，让重点更突出。</span><i class="text-caret"></i></div></div></article>
+            </div>
+
+            <div class="mac-toast" id="mac-toast"><span class="toast-app"><svg><use href="#i-terminal"/></svg></span><div><header><strong id="toast-title">Codex · 需要回复</strong><time>now</time></header><b id="toast-project">[api-service] 确认兼容策略</b><p id="toast-message">保留旧版接口，还是直接替换？</p></div></div>
+            <div class="pending-cancelled" id="pending-cancelled"><svg><use href="#i-check"/></svg>会话已继续 · 后续待发提醒取消</div>
+            <div class="mac-dock"><span class="dock-finder"><i></i><b>⌣</b></span><span class="dock-terminal"><svg><use href="#i-terminal"/></svg></span><span class="dock-safari"><i></i></span><span class="dock-notes"><i></i></span><span class="dock-divider"></span><span class="dock-folder"></span></div>
+            <div class="screen-dim" id="screen-dim"></div>
+            <div class="mac-cursor" id="mac-cursor"><svg viewBox="0 0 28 34"><path d="M3 2v25l6-7 6 12 5-3-6-11h10Z"/></svg><i></i></div>
+          </div></div><div class="laptop-base"><i></i></div><div class="laptop-shadow"></div>
         </div>
 
-        <div class="back-window back-window-left">
-          <div class="window-bar"><span class="traffic"><i></i><i></i><i></i></span><span>api-service — Codex</span></div>
-          <div class="back-terminal"><span class="terminal-green">~/projects/api-service</span><p>› 修复接口超时，补充测试</p><p class="terminal-dim">Reading src/handlers.ts</p><p class="terminal-dim">Running integration tests…</p><span class="tiny-progress"><i></i></span><span class="running-text">Agent is working</span></div>
-        </div>
-        <div class="back-window back-window-right">
-          <div class="window-bar"><span class="traffic"><i></i><i></i><i></i></span><span>dataset — dsh</span></div>
-          <div class="back-terminal"><span class="terminal-green">~/projects/dataset</span><p>› 清理数据，更新统计</p><p class="terminal-dim">Parsing records…</p><div class="data-lines"><span></span><span></span><span></span><span></span></div><span class="running-text">Processing 2,048 records</span></div>
-        </div>
-
-        <div class="work-window">
-          <div class="window-bar front-bar"><span class="traffic"><i></i><i></i><i></i></span><span class="front-window-title">projects — 3 个会话</span><span class="window-command">⌘ 1</span></div>
-          <div class="terminal-tabs">
-            <div class="terminal-tab research-tab"><span class="tab-dot"></span><span>research-notes</span><small>Claude</small></div>
-            <div class="terminal-tab design-tab"><span class="tab-dot"></span><span>design-system</span><small>Codex</small></div>
-            <div class="terminal-tab benchmark-tab"><span class="tab-dot"></span><span>benchmark-suite</span><small>Codex</small></div>
-          </div>
-
-          <div class="terminal-view research-view">
-            <div class="terminal-path">~/projects/research-notes <span>main</span></div>
-            <div class="prompt-line"><span>›</span> 整理检索结果，比较三种方法的适用范围。</div>
-            <div class="response-heading"><span class="agent-star">✳</span><b>检索结果已整理</b></div>
-            <p class="terminal-copy">找到了 12 篇相关研究，先对齐三个比较维度：</p>
-            <div class="research-table"><span>方法</span><span>适用数据</span><span>主要特点</span><b>实体对齐</b><span>多源语料</span><span>统一知识对象</span><b>关系抽取</b><span>论文摘要</span><span>保留证据上下文</span><b>历史追踪</b><span>跨年文献</span><span>还原知识演化</span></div>
-            <div class="terminal-input"><span>›</span> 从第二种方法继续看 <span class="caret"></span></div>
-          </div>
-
-          <div class="terminal-view design-view">
-            <div class="terminal-path">~/projects/design-system <span>feat / components</span></div>
-            <div class="response-heading"><span class="agent-star">✳</span><b>需要你确认一个设计细节。</b></div>
-            <p class="terminal-copy">按钮与输入框已对齐样式，圆角使用哪一种？</p>
-            <div class="decision-options"><div class="decision-option"><span>1</span><div><b>8px · 更紧凑</b><small>保持当前界面的几何感</small></div><i class="button-example compact-example">Button</i></div><div class="decision-option selected-option"><span>2</span><div><b>12px · 更柔和</b><small>与通知卡片保持一致</small></div><i class="button-example soft-example">Button</i></div></div>
-            <div class="decision-status"><span class="waiting-answer">等待你的选择</span><span class="answered">✓ 已回复，Agent 继续工作</span></div>
-            <div class="terminal-input response-input"><span>›</span> 2. 12px，继续统一组件样式。<span class="caret"></span></div>
-          </div>
-
-          <div class="terminal-view long-running-view">
-            <div class="terminal-path">~/projects/benchmark-suite <span>evaluation</span></div>
-            <div class="prompt-line"><span>›</span> 跑完评测，汇总结果，生成报告。</div>
-            <div class="response-heading"><span class="agent-star spinning">✳</span><b>正在执行评测</b></div>
-            <div class="run-counter"><strong>32<span> / 48</span></strong><small>evaluation batches</small></div>
-            <div class="long-progress"><i></i></div>
-            <div class="run-log"><p><span>✓</span> 基线结果已保存</p><p><span>✓</span> 数据校验完成</p><p><span>↳</span> 正在运行剩余批次…</p></div>
-          </div>
-
-          <div class="terminal-view long-review-view">
-            <div class="terminal-path">~/projects/benchmark-suite <span>evaluation</span></div>
-            <div class="response-heading"><span class="agent-star">✳</span><b>48 组评测完成，报告已生成。</b></div>
-            <p class="terminal-copy">结果与分析已保存。你可以开始检查这两个文件：</p>
-            <div class="output-file"><span class="file-icon">↗</span><div><b>reports/evaluation.md</b><span>评测结论、方法对比与异常说明</span></div><small>已生成</small></div>
-            <div class="output-file"><span class="file-icon">≡</span><div><b>results/summary.csv</b><span>48 组实验的完整结果</span></div><small>已保存</small></div>
-            <div class="review-footer"><span class="success-check">✓</span> 现在，轮到你验收。<span>Ready for your review</span></div>
-            <div class="terminal-input"><span>›</span> 打开报告，检查实验结果。<span class="caret"></span></div>
-          </div>
-          <div class="mouse-pointer"><svg viewBox="0 0 24 30"><path d="M2 1 2 23l6-6 5 11 5-2-5-10h9Z"/></svg><i></i></div>
+        <div class="person" id="person" aria-hidden="true">
+          <svg viewBox="0 0 420 520" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="215" cy="493" rx="160" ry="17" fill="#353d5a" opacity=".1"/>
+            <path d="M106 328Q102 296 135 296H292Q326 297 322 331L303 450H119Z" fill="#7e85c4"/>
+            <path d="m136 433-15 67m162-67 18 67" stroke="#565f91" stroke-width="18" stroke-linecap="round"/>
+            <path d="M179 351q-34 35-25 100l-20 29 47 2 22-38 18-62M234 358q45 19 45 78l10 39 47-2-23-34q2-61-30-91" fill="#30445b"/>
+            <path d="M133 472q-11 2-19 15-4 9 11 9h62v-25ZM287 467l-2 29h64q10-2 5-9l-23-19" fill="#f6c667"/>
+            <path d="M154 196Q103 219 104 294L130 361Q204 394 292 358L306 277Q299 213 256 199Z" fill="#aaa8ec"/>
+            <path d="M164 208q38 30 79 0l-6-36h-66Z" fill="#d99562"/>
+            <path d="M130 121q-6-68 67-75 85-3 83 75v40q-3 70-77 72-72-5-74-69Z" fill="#efb584"/>
+            <path d="M126 141q-29-22-14-61 15-51 71-48 71-23 96 31 27 37-3 88l-13-45q-35 7-62-16-20 28-70 27Z" fill="#4b3736"/>
+            <path d="M125 140q-22-19-24 5 1 28 27 25m149-28q22-17 22 7-1 24-22 23" fill="#efb584"/>
+            <path d="m149 132 22-5m51-1 22 7" stroke="#4b3736" stroke-width="7" stroke-linecap="round"/>
+            <g id="person-eyes"><ellipse cx="164" cy="151" rx="5.5" ry="8" fill="#3e3133"/><ellipse cx="232" cy="151" rx="5.5" ry="8" fill="#3e3133"/></g>
+            <path d="M194 152q-9 19 4 18" stroke="#cf8a5d" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path d="M179 185q21 17 41-2" fill="#fff8ec" stroke="#a75e4d" stroke-width="4" stroke-linecap="round"/>
+            <ellipse cx="146" cy="170" rx="13" ry="6" fill="#df8f73" opacity=".65"/><ellipse cx="250" cy="170" rx="13" ry="6" fill="#df8f73" opacity=".65"/>
+            <path d="M126 235q-37 35-33 76 0 27 41 25l48-23-14-29-35 12 27-42" fill="#9a97dc"/>
+            <path d="m168 285 33-15q22-5 29 9 5 12-16 24l-35 15Z" fill="#efb584"/>
+            <g id="coffee-arm"><path d="M275 231q37 23 40 60l-27 24-35-53" fill="#aaa8ec"/><path d="M304 282q29-20 35-51l-26-11-27 49q-13 13 0 23Z" fill="#efb584"/><path d="M286 196h65v43q-2 25-31 25-31 0-34-25Z" fill="#ffdb75"/><ellipse cx="318" cy="197" rx="32" ry="8" fill="#bd7b43"/><path d="M351 206q34-3 24 25-6 12-24 7" stroke="#ffdb75" stroke-width="12" fill="none"/><path d="M305 230q-4-19-15-16-13 2-7 21l8 15" fill="#efb584"/><g id="coffee-steam" stroke="#cfbda0" stroke-width="5" fill="none" stroke-linecap="round"><path d="M309 175q-12-14 0-25t0-23"/><path d="M331 173q-12-14 0-25"/></g></g>
+          </svg>
+          <span class="break-bubble" id="break-bubble"><svg><use href="#i-coffee"/></svg>休息一下。</span>
         </div>
 
-        <div class="mac-notification">
-          <div class="notification-icon"><svg><use href="#i-bell"/></svg></div>
-          <div><div class="notification-header"><b>Codex · 需要回复</b><span>现在</span></div><strong>[design-system] 请选择按钮圆角</strong><p>8px 更紧凑，还是 12px 更柔和？</p></div>
-        </div>
-        <div class="cancelled-note"><svg><use href="#i-check"/></svg><span>已继续此会话 · 后续待发提醒取消</span></div>
+        <div class="phone" id="phone" aria-hidden="true"><div class="phone-buttons"></div><div class="phone-display"><div class="phone-status"><b id="phone-time">14:32</b><span>▰ <svg><use href="#i-wifi"/></svg><i></i></span></div><div class="dynamic-island"></div>
+          <div class="phone-game" id="phone-game"><div class="game-heading"><span>HOP!</span><b>★ <span id="game-score">240</span></b></div><div class="game-cloud cloud-one"></div><div class="game-cloud cloud-two"></div><div class="game-sun"></div><div class="game-hill hill-back"></div><div class="game-hill hill-front"></div><div class="game-platform platform-one"></div><div class="game-platform platform-two"></div><div class="game-platform platform-three"></div><span class="game-coin coin-one">★</span><span class="game-coin coin-two">★</span><div class="game-character" id="game-character"><i></i><i></i><b></b><span></span></div><div class="game-ground"></div><div class="game-combo" id="game-combo">NICE!</div><div class="game-control"><span>‹</span><span>›</span><b>↑</b></div></div>
+          <div class="phone-banner" id="phone-banner"><span class="feishu-icon"><svg><use href="#i-feishu"/></svg></span><div><header><b>飞书</b><time>现在</time></header><strong>Codex · 任务完成</strong><p>结算模块重构与测试已完成</p></div></div>
+          <div class="phone-message" id="phone-message"><div class="message-appbar"><span>‹</span><b>Agent 通知</b><span>···</span></div><p class="message-timestamp">14:58</p><div class="message-sender"><span class="feishu-icon"><svg><use href="#i-feishu"/></svg></span><b>cc-notify-hooks <small>机器人</small></b></div><div class="feishu-card"><h3>Codex · 任务完成</h3><div class="message-card-body"><span class="message-project">checkout</span><p>结算模块重构完成。<br>兼容旧接口，86 项测试通过。</p><div class="message-result" id="message-result-1"><span>✓</span> 重构完成</div><div class="message-result" id="message-result-2"><span>✓</span> 测试通过</div><div class="message-result" id="message-result-3"><span>↗</span> 等你回电脑验收</div><div class="message-meta">事件 · Stop<br>Session · demo-che</div></div></div></div>
+          <div class="phone-homebar"></div><div class="phone-tap" id="phone-tap"></div>
+        </div></div>
 
-        <div class="desktop-dock"><span class="dock-finder">◡</span><span class="dock-terminal">›_</span><span class="dock-browser">◉</span><span class="dock-notes"><i></i></span><span class="dock-divider"></span><span class="dock-folder">▰</span></div>
-      </div>
+        <div class="time-jump" id="time-jump" aria-hidden="true"><span class="jump-icon">››</span><span>回合结束后<strong>5 分钟未响应</strong></span></div>
+        <div class="focus-ribbon" id="focus-ribbon" aria-hidden="true"><span class="focus-dot"></span><span id="focus-ribbon-text">3 个独立窗口，同时推进</span></div>
+        <div class="confetti" id="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="film-caption" id="film-caption" aria-hidden="true"><span id="caption-text">长任务交给 Agent，注意力还给自己。</span></div>
+      </section>
+    </div>
 
-      <div class="away-label" aria-hidden="true"><span class="away-rule"></span><p class="away-running-label">人先离开。<br><b>Agent 继续。</b></p><p class="away-complete-label">23 分钟后，回合结束。<br><b>5 分钟未响应，手机收到提醒。</b></p></div>
+    <div class="rotate-message" id="rotate-message"><svg class="rotate-phone"><use href="#i-phone"/></svg><h2>把手机横过来，<br>一起看这支短片。</h2><p>为宽屏设计，横屏时自动继续。</p><a href="index.html">先回首页看看 <span>↗</span></a></div>
 
-      <div class="phone" aria-hidden="true">
-        <div class="phone-button phone-button-left"></div><div class="phone-button phone-button-right"></div>
-        <div class="phone-screen">
-          <div class="phone-wallpaper"><i></i><i></i></div>
-          <div class="phone-status"><b>15:00</b><span>▮▮▮ <span class="phone-wifi">⌁</span><span class="phone-battery"></span></span></div>
-          <div class="dynamic-island"></div>
-          <div class="lockscreen"><span class="lock-glyph">⌑</span><p>星期一 · 下午</p><strong>15:00</strong><span class="lock-weather">☀ 适合出去走走</span></div>
-          <div class="phone-notification"><div class="phone-notice-head"><span class="feishu-icon"><svg><use href="#i-feishu"/></svg></span><b>飞书</b><span>现在</span></div><strong>Agent 通知</strong><p>[benchmark-suite] Codex 回复结束</p><p class="phone-notice-preview">48 组评测完成，报告已生成。</p></div>
-          <div class="phone-tap"></div>
-          <div class="phone-chat">
-            <div class="chat-bar"><span>‹</span><div><b>Agent 通知</b><small>工作群 · 通知机器人</small></div><span>···</span></div>
-            <div class="chat-time">15:00</div>
-            <div class="chat-sender"><span class="feishu-icon"><svg><use href="#i-feishu"/></svg></span><b>cc-notify-hooks <small>机器人</small></b></div>
-            <div class="message-card"><div class="message-card-title"><span>✓</span><b>Codex · 任务完成</b></div><div class="message-card-content"><small>项目</small><strong>benchmark-suite</strong><p>48 组评测完成，报告与结果已保存。可以回到电脑检查了。</p><div class="message-meta">事件 · Stop<br>Session · demo-ben</div></div></div>
-            <div class="chat-composer"><span>＋</span><div>消息</div><span>☺</span></div>
-          </div>
-          <div class="phone-homebar"></div>
-        </div>
-      </div>
-
-      <div class="return-badge" aria-hidden="true"><svg><use href="#i-check"/></svg><span>回到电脑，开始验收</span></div>
-    </section>
-
-    <div class="film-caption"><span class="caption-step" id="caption-step">01 — 01</span><p id="caption-text">你在处理另一件事。三个会话，各自向前。</p><span class="caption-kind" id="caption-kind">秒级 · 桌面提醒</span></div>
-
-    <nav class="player-controls" aria-label="演示播放控制">
-      <div class="playback-buttons"><button class="icon-button play-toggle" id="play-toggle" type="button" aria-label="暂停演示"><svg aria-hidden="true"><use href="#i-pause"/></svg></button><button class="icon-button" id="replay" type="button" aria-label="从头重播"><svg aria-hidden="true"><use href="#i-replay"/></svg></button></div>
-      <div class="chapter-buttons" aria-label="选择场景"><button type="button" data-chapter="0" aria-pressed="true"><span>01</span> 多会话并行</button><button type="button" data-chapter="18" aria-pressed="false"><span>02</span> 离开电脑后</button></div>
-      <div class="seek-wrap"><label class="sr-only" for="seek">演示进度（秒）</label><input id="seek" type="range" min="0" max="39.9" step="0.1" value="0"><span class="time-display" id="time-display">00:00 / 00:40</span></div>
-      <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="主题：跟随系统。点击切换为浅色"><svg aria-hidden="true"><use href="#i-theme"/></svg></button>
-      <button class="icon-button fullscreen-toggle" id="fullscreen-toggle" type="button" aria-label="全屏观看"><svg aria-hidden="true"><use href="#i-expand"/></svg></button>
-    </nav>
-
-    <div class="rotate-message" id="rotate-message"><svg aria-hidden="true"><use href="#i-phone"/></svg><p>把手机横过来，<br>看 Agent 如何找到你。</p><span>这是一段为宽屏设计的演示</span><a href="index.html#install" target="_top">先去安装 <span>↗</span></a></div>
-    <div class="motion-note" id="motion-note" hidden><span>已按你的低动态偏好暂停。</span><button type="button" id="motion-play">播放演示 <span>→</span></button></div>
-    <div class="fullscreen-note" id="fullscreen-note" hidden><span id="fullscreen-status" role="status"></span><a href="demo.html" target="_top">打开独立演示页 ↗</a><button id="dismiss-fullscreen-note" type="button" aria-label="关闭全屏提示">×</button></div>
-    <noscript><div class="no-script-message"><p>启用 JavaScript，观看桌面与手机通知的场景演示。</p><a href="index.html#install" target="_top">查看安装方式 →</a></div></noscript>
+    <footer class="player-controls" aria-label="播放器控制">
+      <button class="icon-button" id="play-toggle" type="button" aria-label="暂停演示"><svg><use id="play-icon" href="#i-pause"/></svg></button>
+      <button class="icon-button" id="replay" type="button" aria-label="从头重播"><svg><use href="#i-replay"/></svg></button>
+      <span class="elapsed" id="elapsed">00:00 / 00:24</span>
+      <label class="sr-only" for="timeline">演示进度</label><input class="timeline" id="timeline" type="range" min="0" max="24" value="0" step="0.05" aria-valuetext="长通知，0 秒，共 24 秒">
+      <span class="playback-state" id="playback-state">长通知 · 独立循环</span>
+      <label class="theme-control" for="theme-select"><svg><use href="#i-theme"/></svg><span class="sr-only">外观主题</span><select id="theme-select" aria-label="外观主题"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label>
+      <button class="icon-button" id="fullscreen" type="button" aria-label="进入全屏"><svg><use href="#i-expand"/></svg></button>
+    </footer>
+    <p class="sr-only" id="scene-description">长通知短片：把复杂任务交给 Agent，离开电脑休息。电脑屏幕变暗，Agent 继续工作。手机游戏画面上出现飞书通知，打开后确认任务已完成，再回到电脑验收。</p>
+    <p class="sr-only" id="player-status" role="status" aria-live="polite"></p>
   </main>
 </body>
 </html>

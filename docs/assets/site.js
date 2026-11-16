@@ -1,7 +1,6 @@
 (() => {
   'use strict';
 
-  const frame = document.getElementById('workflow-demo');
   const themeButton = document.getElementById('theme-toggle');
   const themeLabel = document.getElementById('theme-label');
   const themes = ['system', 'light', 'dark'];
@@ -13,11 +12,6 @@
     if (themes.includes(stored)) theme = stored;
   } catch { /* Storage is optional. */ }
 
-  function notifyDemo(message) {
-    // file:// previews have an opaque origin; the receiver still verifies the sending window.
-    frame.contentWindow?.postMessage(message, location.origin === 'null' ? '*' : location.origin);
-  }
-
   function applyTheme() {
     if (theme === 'system') delete document.documentElement.dataset.theme;
     else document.documentElement.dataset.theme = theme;
@@ -25,7 +19,6 @@
     const next = themes[(themes.indexOf(theme) + 1) % themes.length];
     themeButton.setAttribute('aria-label', `切换主题，当前${themeNames[theme]}，切换为${themeNames[next]}`);
     themeButton.title = `当前${themeNames[theme]} · 点击切换为${themeNames[next]}`;
-    notifyDemo({ type: 'cc-notify:theme', theme });
   }
 
   themeButton.hidden = false;
@@ -40,25 +33,6 @@
     applyTheme();
   });
   applyTheme();
-
-  // Pause the film when it leaves the screen; installation should not keep a hidden animation running.
-  let inView = true;
-  function notifyVisibility() {
-    notifyDemo({ type: 'cc-notify:visibility', visible: inView && !document.hidden });
-  }
-  if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver(entries => {
-      inView = entries[0].isIntersecting;
-      notifyVisibility();
-    }, { threshold: 0 });
-    observer.observe(frame);
-  }
-  frame.addEventListener('load', () => { applyTheme(); notifyVisibility(); });
-  document.addEventListener('visibilitychange', notifyVisibility);
-  window.addEventListener('message', event => {
-    if (event.origin !== location.origin || event.source !== frame.contentWindow) return;
-    if (event.data?.type === 'cc-notify:ready') { applyTheme(); notifyVisibility(); }
-  });
 
   const tabList = document.getElementById('install-tabs');
   const tabs = [...tabList.querySelectorAll('[role="tab"]')];
